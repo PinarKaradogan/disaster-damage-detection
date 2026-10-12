@@ -18,3 +18,7 @@ data/*
 
 # VS Code
 .vscode/
+
+# Dataset archives
+*.tar.gz
+*.zip
