@@ -1,0 +1,11 @@
+﻿disaster_type,disaster,no-damage,minor-damage,major-damage,destroyed,un-classified,toplam_bina,goruntu_cifti,hasarli_oran_%
+earthquake,mexico-earthquake,32066,110,18,2,75,32271,121,0.4
+fire,santa-rosa-wildfire,9285,78,63,3471,53,12950,219,27.9
+fire,socal-fire,8638,83,51,1329,374,10475,408,14.0
+flooding,hurricane-florence,4689,132,1245,54,326,6446,306,22.2
+flooding,hurricane-harvey,11423,2663,8238,401,289,23014,300,49.1
+flooding,midwest-flooding,8128,149,119,75,285,8756,244,3.9
+tsunami,palu-tsunami,25455,1,571,4966,401,31394,111,17.6
+volcano,guatemala-volcano,639,9,9,25,174,856,17,5.0
+wind,hurricane-matthew,2515,6548,1945,2147,784,13939,223,76.3
+wind,hurricane-michael,14588,5207,1902,757,232,22686,334,34.7
