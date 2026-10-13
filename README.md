@@ -37,4 +37,4 @@ Download xBD from [xview2.org](https://xview2.org) (registration required) and e
 ## Team
 
 - Pınar Karadoğan
-- Bahar
+- Bahar Toslak
