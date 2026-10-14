@@ -1,12 +1,16 @@
-"""xBD post-disaster etiketlerinden bina indeksi (buildings_<split>.csv) üretir.
+"""xBD post-disaster etiketlerinden bina indeksi ve görüntü envanteri üretir.
 
 Kullanım (repo kökünden):
     python -m src.preprocessing.build_index
 
+Çıktılar (data/<split>/labels yoksa o bölme atlanır):
+    data/processed/buildings_<split>.csv  her bina için bir satır
+    data/processed/images_<split>.csv     her post JSON için bir satır (binasız görüntüler dahil)
+
 Her bina için WKT geometrisi features -> xy -> wkt alanından shapely ile okunur,
-sınır kutusu geom.bounds ile hesaplanır. data/<split>/labels yoksa o bölme atlanır.
-Train kabul kriterleri CSV yazılmadan önce kontrol edilir; tutmazsa CSV yazılmaz,
-eski CSV silinir ve script 1 çıkış koduyla durur. CSV'ler atomik olarak (önce .tmp) yazılır.
+sınır kutusu geom.bounds ile hesaplanır.
+Train kabul kriterleri CSV'ler yazılmadan önce kontrol edilir; tutmazsa hiçbir CSV yazılmaz,
+eski CSV'ler silinir ve script 1 çıkış koduyla durur. CSV'ler atomik olarak (önce .tmp) yazılır.
 """
 import hashlib
 import json
@@ -31,12 +35,18 @@ SIZE_THRESHOLDS = [150, 200, 256, 300, 400, 500, 600, 700, 800, 900, 1000]
 COLUMNS = ["source_split", "image_id", "disaster", "disaster_type", "damage", "uid",
            "x_min", "y_min", "x_max", "y_max", "width", "height", "size",
            "is_valid", "aspect_ratio", "is_bad_polygon", "out_of_bounds"]
+IMAGE_COLUMNS = ["source_split", "image_id", "disaster", "disaster_type", "n_buildings", "n_eligible_buildings"]
 
 # Faz 2'de Pınar ve Bahar'ın bağımsız olarak bulduğu train değerleri
 TRAIN_EXPECTED = {
     "toplam": 162787, "un-classified hariç": 159794, "invalid": 1, "short<3": 91,
     "aspect>10": 118, "bad union": 177, "out_of_bounds": 2476,
     **{f">={t}": n for t, n in zip(SIZE_THRESHOLDS, [1189, 492, 245, 148, 41, 14, 7, 3, 1, 1, 1])},
+}
+# Faz 3 görüntü evreni raporu (post JSON'lardan doğrudan sayım)
+TRAIN_IMAGES_EXPECTED = {
+    "görüntü": 2799, "binalı": 2283, "binasız": 516,
+    "uygun binası kalmayan": 44, "uygun binalı": 2239,
 }
 
 
@@ -78,17 +88,43 @@ def add_geometry_flags(df):
     return df
 
 
+def eligible_mask(buildings):
+    """Patch çıkarımına uygun binalar: un-classified değil ve bozuk poligon değil."""
+    return (buildings["damage"] != "un-classified") & ~buildings["is_bad_polygon"].astype(bool)
+
+
+def build_tables(labels, source_split):
+    """labels: [(image_id, label_dict), ...] → (sıralı bina tablosu, sıralı görüntü envanteri)."""
+    rows, images = [], []
+    for image_id, label in labels:
+        meta = label["metadata"]
+        images.append({"source_split": source_split, "image_id": image_id,
+                       "disaster": meta["disaster"], "disaster_type": meta["disaster_type"]})
+        rows += label_to_rows(label, image_id, source_split)
+    buildings = add_geometry_flags(pd.DataFrame(rows, columns=COLUMNS[:10] + ["is_valid"]))
+    buildings = buildings[COLUMNS].sort_values(["image_id", "uid"]).reset_index(drop=True)
+    return buildings, build_image_inventory(pd.DataFrame(images, columns=IMAGE_COLUMNS[:4]), buildings)
+
+
 def build_index(labels, source_split):
     """labels: [(image_id, label_dict), ...] → sıralı bina tablosu."""
-    rows = []
-    for image_id, label in labels:
-        rows += label_to_rows(label, image_id, source_split)
-    df = add_geometry_flags(pd.DataFrame(rows, columns=COLUMNS[:10] + ["is_valid"]))
-    return df[COLUMNS].sort_values(["image_id", "uid"]).reset_index(drop=True)
+    return build_tables(labels, source_split)[0]
+
+
+def build_image_inventory(images, buildings):
+    """Her görüntü için bina ve uygun bina sayısını ekler; binası olmayan görüntüler 0 ile kalır."""
+    counts = pd.DataFrame({
+        "n_buildings": buildings.groupby("image_id").size(),
+        "n_eligible_buildings": eligible_mask(buildings).groupby(buildings["image_id"]).sum(),
+    })
+    inventory = images.merge(counts, left_on="image_id", right_index=True, how="left")
+    inventory[["n_buildings", "n_eligible_buildings"]] = (
+        inventory[["n_buildings", "n_eligible_buildings"]].fillna(0).astype(int))
+    return inventory[IMAGE_COLUMNS].sort_values("image_id").reset_index(drop=True)
 
 
 def summarize(df):
-    """Konsol raporu ve kabul kontrolü için özet sayılar."""
+    """Bina tablosu için konsol raporu ve kabul kontrolü özet sayıları."""
     short_side = df[["width", "height"]].min(axis=1)
     summary = {
         "toplam": len(df),
@@ -102,6 +138,19 @@ def summarize(df):
     for t in SIZE_THRESHOLDS:
         summary[f">={t}"] = int((df["size"] >= t).sum())
     return summary
+
+
+def summarize_images(inventory):
+    """Görüntü envanteri için özet sayılar."""
+    has_buildings = inventory["n_buildings"] > 0
+    has_eligible = inventory["n_eligible_buildings"] > 0
+    return {
+        "görüntü": len(inventory),
+        "binalı": int(has_buildings.sum()),
+        "binasız": int((~has_buildings).sum()),
+        "uygun binası kalmayan": int((has_buildings & ~has_eligible).sum()),
+        "uygun binalı": int(has_eligible.sum()),
+    }
 
 
 def read_labels(label_dir):
@@ -129,19 +178,33 @@ def write_csv_atomic(df, path):
         tmp_path.unlink(missing_ok=True)
 
 
-def save_index(df, out_path, expected=None):
-    """Kabul kriterleri tutarsa CSV'yi atomik yazar ve [] döndürür.
+def save_outputs(outputs):
+    """outputs: [(tablo, yol, özet_fonksiyonu, beklenen veya None), ...]
 
-    Tutmazsa CSV yazılmaz, aynı yoldaki eski CSV silinir ve eşleşmeyen metrikler döndürülür.
+    Önce tüm kabul kriterleri kontrol edilir. Hepsi tutarsa tüm CSV'ler atomik yazılır ve [] döner.
+    Biri bile tutmazsa hiçbir CSV yazılmaz, aynı yollardaki eski CSV'ler silinir ve
+    eşleşmeyen metrikler döndürülür.
     """
-    mismatches = check_acceptance(summarize(df), expected or {})
+    mismatches = []
+    for table, _, summary_fn, expected in outputs:
+        mismatches += check_acceptance(summary_fn(table), expected or {})
     if mismatches:
-        if Path(out_path).exists():
-            Path(out_path).unlink()
-            print(f"Eski dosya silindi: {Path(out_path).name}")
+        for _, path, _, _ in outputs:
+            if Path(path).exists():
+                Path(path).unlink()
+                print(f"Eski dosya silindi: {Path(path).name}")
         return mismatches
-    write_csv_atomic(df, out_path)
+    for table, path, _, _ in outputs:
+        write_csv_atomic(table, path)
     return []
+
+
+def print_summary(summary, expected):
+    print(f"{'metrik':24s}{'bulunan':>10s}{'beklenen':>10s}")
+    for key, value in summary.items():
+        exp = expected.get(key)
+        mark = "" if exp is None else ("  OK" if exp == value else "  FARK")
+        print(f"{key:24s}{value:>10d}{'' if exp is None else exp:>10}{mark}")
 
 
 def main():
@@ -151,33 +214,35 @@ def main():
         label_dir = DATA_DIR / split / "labels"
         print(f"\n=== {split} ===")
         if not label_dir.exists():
-            print(f"ATLANDI: data/{split}/labels bulunamadı, buildings_{split}.csv üretilmedi.")
+            print(f"ATLANDI: data/{split}/labels bulunamadı, buildings_{split}.csv ve images_{split}.csv üretilmedi.")
             continue
 
-        df = build_index(read_labels(label_dir), split)
-        n_images = len(list(label_dir.glob("*_post_disaster.json")))
-        n_unknown = int((df["damage"] == "unknown").sum())
-        n_dup = int(df.duplicated(["image_id", "uid"]).sum())
-        print(f"Post JSON: {n_images}  |  subtype eksik (damage=unknown): {n_unknown}  |  "
-              f"tekrarlanan (image_id, uid): {n_dup}")
+        buildings, images = build_tables(read_labels(label_dir), split)
+        n_unknown = int((buildings["damage"] == "unknown").sum())
+        n_dup = int(buildings.duplicated(["image_id", "uid"]).sum())
+        print(f"subtype eksik (damage=unknown): {n_unknown}  |  tekrarlanan (image_id, uid): {n_dup}")
 
-        summary = summarize(df)
-        expected = TRAIN_EXPECTED if split == "train" else {}
-        print(f"{'metrik':22s}{'bulunan':>10s}{'beklenen':>10s}")
-        for key, value in summary.items():
-            exp = expected.get(key)
-            mark = "" if exp is None else ("  OK" if exp == value else "  FARK")
-            print(f"{key:22s}{value:>10d}{'' if exp is None else exp:>10}{mark}")
+        expected_buildings = TRAIN_EXPECTED if split == "train" else {}
+        expected_images = TRAIN_IMAGES_EXPECTED if split == "train" else {}
+        print("\nBinalar")
+        print_summary(summarize(buildings), expected_buildings)
+        print("\nGörüntüler")
+        print_summary(summarize_images(images), expected_images)
 
-        out_path = OUT_DIR / f"buildings_{split}.csv"
-        mismatches = save_index(df, out_path, expected)
+        buildings_path = OUT_DIR / f"buildings_{split}.csv"
+        images_path = OUT_DIR / f"images_{split}.csv"
+        mismatches = save_outputs([
+            (buildings, buildings_path, summarize, expected_buildings),
+            (images, images_path, summarize_images, expected_images),
+        ])
         if mismatches:
-            print(f"\nKABUL KRİTERİ SAĞLANMADI, {out_path.relative_to(ROOT).as_posix()} yazılmadı:")
+            print(f"\nKABUL KRİTERİ SAĞLANMADI, {split} CSV'leri yazılmadı:")
             for key, exp, value in mismatches:
                 print(f"  {split} {key}: beklenen {exp}, bulunan {value}")
             sys.exit(1)
-        print(f"\nYazıldı: {out_path.relative_to(ROOT).as_posix()}  ({len(df)} satır)")
-        print(f"SHA256 : {sha256(out_path)}")
+        for path, table in [(buildings_path, buildings), (images_path, images)]:
+            print(f"\nYazıldı: {path.relative_to(ROOT).as_posix()}  ({len(table)} satır)")
+            print(f"SHA256 : {sha256(path)}")
 
 
 if __name__ == "__main__":
