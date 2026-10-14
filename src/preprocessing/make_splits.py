@@ -11,7 +11,7 @@ Kullanım (repo kökünden):
 
 Bölme görüntü (image_id) bazındadır: aynı görüntünün tüm binaları aynı bölmeye düşer.
 Eğitimden çıkarılanlar: damage == "un-classified" ve is_bad_polygon == True.
-out_of_bounds binalar tutulur (patch çıkarımında crop clamp edilir).
+out_of_bounds binalar tutulur (patch çıkarımında kesit boyutu korunur, görüntü dışı siyah padding ile doldurulur).
 
 KURAL: Challenge test'ten gelen bölmeler (standard/test ve holdout_challenge_test) yalnızca final
 değerlendirmede kullanılır; model ve hiperparametre seçimleri sadece train/val üzerinden yapılır.

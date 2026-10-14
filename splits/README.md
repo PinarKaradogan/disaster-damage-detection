@@ -19,7 +19,8 @@ per line, sorted. All buildings of an image belong to the same split.
 ## Filters
 
 - Removed: buildings with `damage == "un-classified"` and buildings with `is_bad_polygon == True`.
-- Kept: `out_of_bounds` buildings (crops are clamped to the image during patch extraction).
+- Kept: `out_of_bounds` buildings. During patch extraction the crop size is preserved and the area
+  outside the image is filled with black (0) padding; crops are not shrunk and the aspect ratio is kept.
 
 ## Rule
 

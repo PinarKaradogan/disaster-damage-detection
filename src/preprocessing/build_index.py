@@ -5,9 +5,12 @@ Kullanım (repo kökünden):
 
 Her bina için WKT geometrisi features -> xy -> wkt alanından shapely ile okunur,
 sınır kutusu geom.bounds ile hesaplanır. data/<split>/labels yoksa o bölme atlanır.
+Train kabul kriterleri CSV yazılmadan önce kontrol edilir; tutmazsa CSV yazılmaz,
+eski CSV silinir ve script 1 çıkış koduyla durur. CSV'ler atomik olarak (önce .tmp) yazılır.
 """
 import hashlib
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -68,7 +71,8 @@ def add_geometry_flags(df):
     # Kısa kenar 0 ise oran sonsuz kabul edilir
     df["aspect_ratio"] = np.where(short_side > 0, long_side / short_side.where(short_side > 0, 1), np.inf)
     df["is_bad_polygon"] = ~df["is_valid"].astype(bool) | (short_side < THIN_PX) | (df["aspect_ratio"] > MAX_ASPECT)
-    # Bilgi amaçlı: bu binalar atılmaz, Faz 3 patch çıkarımında crop 0..1024'e clamp edilir
+    # Bilgi amaçlı, eleme kuralı değil: bu binalar atılmaz. Patch çıkarımında kesit boyutu korunur,
+    # görüntü dışında kalan alan siyah (0) padding ile doldurulur; kesit küçültülmez, en-boy oranı bozulmaz.
     df["out_of_bounds"] = ((df["x_min"] < 0) | (df["y_min"] < 0)
                            | (df["x_max"] > IMG_SIZE) | (df["y_max"] > IMG_SIZE))
     return df
@@ -109,9 +113,39 @@ def sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def check_acceptance(summary, expected):
+    """Beklenen değerlerle eşleşmeyen metrikleri [(metrik, beklenen, bulunan), ...] olarak döndürür."""
+    return [(key, exp, summary.get(key)) for key, exp in expected.items() if summary.get(key) != exp]
+
+
+def write_csv_atomic(df, path):
+    """Önce <ad>.tmp dosyasına yazar, başarılıysa asıl ada taşır; yarım CSV kalmaz."""
+    path = Path(path)
+    tmp_path = path.with_name(path.name + ".tmp")
+    try:
+        df.to_csv(tmp_path, index=False, encoding="utf-8", lineterminator="\n", float_format="%.6f")
+        os.replace(tmp_path, path)
+    finally:
+        tmp_path.unlink(missing_ok=True)
+
+
+def save_index(df, out_path, expected=None):
+    """Kabul kriterleri tutarsa CSV'yi atomik yazar ve [] döndürür.
+
+    Tutmazsa CSV yazılmaz, aynı yoldaki eski CSV silinir ve eşleşmeyen metrikler döndürülür.
+    """
+    mismatches = check_acceptance(summarize(df), expected or {})
+    if mismatches:
+        if Path(out_path).exists():
+            Path(out_path).unlink()
+            print(f"Eski dosya silindi: {Path(out_path).name}")
+        return mismatches
+    write_csv_atomic(df, out_path)
+    return []
+
+
 def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    mismatches = []
 
     for split in SPLITS:
         label_dir = DATA_DIR / split / "labels"
@@ -134,19 +168,16 @@ def main():
             exp = expected.get(key)
             mark = "" if exp is None else ("  OK" if exp == value else "  FARK")
             print(f"{key:22s}{value:>10d}{'' if exp is None else exp:>10}{mark}")
-            if exp is not None and exp != value:
-                mismatches.append((split, key, exp, value))
 
         out_path = OUT_DIR / f"buildings_{split}.csv"
-        df.to_csv(out_path, index=False, encoding="utf-8", lineterminator="\n", float_format="%.6f")
+        mismatches = save_index(df, out_path, expected)
+        if mismatches:
+            print(f"\nKABUL KRİTERİ SAĞLANMADI, {out_path.relative_to(ROOT).as_posix()} yazılmadı:")
+            for key, exp, value in mismatches:
+                print(f"  {split} {key}: beklenen {exp}, bulunan {value}")
+            sys.exit(1)
         print(f"\nYazıldı: {out_path.relative_to(ROOT).as_posix()}  ({len(df)} satır)")
         print(f"SHA256 : {sha256(out_path)}")
-
-    if mismatches:
-        print("\nKABUL KRİTERİ SAĞLANMADI:")
-        for split, key, exp, value in mismatches:
-            print(f"  {split} {key}: beklenen {exp}, bulunan {value}")
-        sys.exit(1)
 
 
 if __name__ == "__main__":
