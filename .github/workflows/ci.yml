@@ -31,10 +31,13 @@ jobs:
 
       - name: Install project dependencies
         run: |
-          pip install pandas matplotlib scikit-learn shapely tqdm
+          pip install pandas matplotlib scikit-learn shapely tqdm pytest
 
       - name: Check Python files
         run: python -m compileall src
+
+      - name: Run tests
+        run: python -m pytest tests -q
 
       - name: Check environment
         run: python src/check_environment.py
