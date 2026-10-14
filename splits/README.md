@@ -39,6 +39,19 @@ appears in train / validation.
   stratification rule above.
 - `test_images.txt`: all images of the Challenge test set.
 
+### Class distribution per split
+
+Splits are made by image, not by building, so building-level class ratios differ somewhat between
+splits. Eligible buildings (without `un-classified` and `is_bad_polygon`) in the standard split:
+
+| Split | Images | Eligible buildings | no-damage | minor-damage | major-damage | destroyed |
+|---|---|---|---|---|---|---|
+| train | 2380 | 134,028 | 99,573 (74.3%) | 12,060 (9.0%) | 12,064 (9.0%) | 10,331 (7.7%) |
+| val | 419 | 25,615 | 17,736 (69.2%) | 2,916 (11.4%) | 2,076 (8.1%) | 2,887 (11.3%) |
+| test | 933 | 53,806 | 41,391 (76.9%) | 4,793 (8.9%) | 3,847 (7.1%) | 3,775 (7.0%) |
+
+Seed 42 was fixed before any split result was seen and is not tuned to balance these ratios.
+
 ## `splits/unseen_disaster/<disaster>/`
 
 - `train_images.txt`, `val_images.txt`: all Challenge train images except the holdout disaster,
