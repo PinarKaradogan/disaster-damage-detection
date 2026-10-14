@@ -219,6 +219,26 @@ def load_processed(kind, split, required=True):
     return pd.read_csv(path)
 
 
+def load_test_inputs(mode):
+    """Challenge test envanteri ve bina tablosu: (images, buildings) veya (None, None).
+
+    standard: ikisi de zorunlu ve görüntü envanteri boş olamaz; değilse hata ile durur.
+    unseen-disaster: test seti opsiyoneldir; biri eksik veya envanter boşsa (None, None) döner ve
+    yalnızca holdout_challenge_test üretilmez.
+    """
+    required = mode == "standard"
+    images = load_processed("images", "test", required=required)
+    buildings = load_processed("buildings", "test", required=required)
+    if images is not None and images.empty:
+        if required:
+            sys.exit("HATA: data/processed/images_test.csv boş (0 görüntü). Challenge test seti eksik; "
+                     "test_images.txt üretilmedi.")
+        images = None
+    if images is None or buildings is None:
+        return None, None
+    return images, buildings
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--mode", choices=["standard", "unseen-disaster"], default="standard")
@@ -229,10 +249,10 @@ def main():
 
     train_images = load_processed("images", "train")
     # Standart modda test seti zorunlu; unseen-disaster modunda yalnızca holdout_challenge_test için kullanılır
-    test_images = load_processed("images", "test", required=args.mode == "standard")
+    test_images, test_buildings = load_test_inputs(args.mode)
     buildings = [load_processed("buildings", "train")]
-    if test_images is not None:
-        buildings.append(load_processed("buildings", "test"))
+    if test_buildings is not None:
+        buildings.append(test_buildings)
     buildings = pd.concat(buildings, ignore_index=True)
 
     if args.mode == "standard":
@@ -242,7 +262,8 @@ def main():
         splits = make_unseen_disaster(train_images, args.holdout_disaster, test_images)
         out_dir = SPLITS_DIR / "unseen_disaster" / args.holdout_disaster
         if test_images is None:
-            print("BİLGİ: images_test.csv yok; holdout yalnızca Challenge train görüntülerinden "
+            print("BİLGİ: Challenge test girdileri (images_test.csv, buildings_test.csv) eksik veya boş; "
+                  "holdout yalnızca Challenge train görüntülerinden "
                   "üretildi (holdout_challenge_test_images.txt yazılmadı).")
         elif "holdout_challenge_test" not in splits:
             print(f"BİLGİ: {args.holdout_disaster} test setinde yok; holdout_challenge_test_images.txt yazılmadı.")

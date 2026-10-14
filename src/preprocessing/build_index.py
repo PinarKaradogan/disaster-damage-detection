@@ -213,8 +213,14 @@ def main():
     for split in SPLITS:
         label_dir = DATA_DIR / split / "labels"
         print(f"\n=== {split} ===")
-        if not label_dir.exists():
-            print(f"ATLANDI: data/{split}/labels bulunamadı, buildings_{split}.csv ve images_{split}.csv üretilmedi.")
+        if not label_dir.exists() or not any(label_dir.glob("*_post_disaster.json")):
+            # Klasörün varlığı yetmez: 0 post JSON eksik girdi sayılır, boş CSV geçerli çıktı gibi bırakılmaz
+            reason = "bulunamadı" if not label_dir.exists() else "içinde *_post_disaster.json yok (eksik girdi)"
+            print(f"ATLANDI: data/{split}/labels {reason}; buildings_{split}.csv ve images_{split}.csv üretilmedi.")
+            for name in [f"buildings_{split}.csv", f"images_{split}.csv"]:
+                if (OUT_DIR / name).exists():
+                    (OUT_DIR / name).unlink()
+                    print(f"Eski dosya silindi: {name}")
             continue
 
         buildings, images = build_tables(read_labels(label_dir), split)
