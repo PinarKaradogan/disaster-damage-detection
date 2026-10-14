@@ -61,6 +61,23 @@ def test_zero_short_side_gives_infinite_aspect():
     assert row.height == 0 and math.isinf(row.aspect_ratio) and row.is_bad_polygon
 
 
+def test_short_side_exactly_3_is_not_bad():
+    row = index_of([("a", "POLYGON ((0 0, 20 0, 20 3, 0 3, 0 0))", "no-damage")]).loc["a"]  # 20x3
+    assert row.height == 3 and row.aspect_ratio < 10 and not row.is_bad_polygon
+
+
+def test_aspect_ratio_exactly_10_is_not_bad():
+    row = index_of([("a", "POLYGON ((0 0, 40 0, 40 4, 0 4, 0 0))", "no-damage")]).loc["a"]  # 40x4
+    assert row.aspect_ratio == 10 and not row.is_bad_polygon
+
+
+def test_large_polygon_alone_is_not_bad():
+    # Faz 2'de kaldırılan "size > 1000" kuralına karşı regression testi
+    row = index_of([("a", "POLYGON ((0 0, 1010 0, 1010 200, 0 200, 0 0))", "no-damage")]).loc["a"]
+    assert row["size"] > 1000 and row.is_valid and row.aspect_ratio <= 10
+    assert not row.is_bad_polygon and not row.out_of_bounds
+
+
 def test_scientific_notation_bounds():
     row = index_of([("a", SCI, "no-damage")]).loc["a"]
     assert math.isclose(row.x_min, -8.3e-06) and row.y_min == 675.9 and row.y_max == 718.7
