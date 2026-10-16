@@ -167,6 +167,7 @@ def test_dataset_label_mapping(project, damage, expected):
 
     ds = DamagePatchDataset(
         manifest,
+        split=row.iloc[0]["split"],
         project_root=root,
     )
 
@@ -364,6 +365,7 @@ def test_invalid_damage_label_rejected(project):
     ):
         DamagePatchDataset(
             manifest,
+            split="train",
             project_root=root,
         )
 
@@ -389,6 +391,7 @@ def test_duplicate_manifest_key_rejected(project):
     ):
         DamagePatchDataset(
             manifest,
+            split="train",
             project_root=root,
         )
 
@@ -470,10 +473,23 @@ def test_invalid_split_rejected(project):
 
     with pytest.raises(
         ValueError,
-        match="Unexpected split",
+        match="split is required and must be one of: train, val, test",
     ):
         DamagePatchDataset(
             manifest,
             split="validation",
+            project_root=root,
+        )
+
+
+def test_missing_split_rejected(project):
+    root, manifest = project
+
+    with pytest.raises(
+        ValueError,
+        match="^split is required and must be one of: train, val, test$",
+    ):
+        DamagePatchDataset(
+            manifest,
             project_root=root,
         )

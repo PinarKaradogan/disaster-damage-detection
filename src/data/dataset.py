@@ -105,6 +105,11 @@ class DamagePatchDataset(Dataset):
         transform=None,
         project_root=ROOT,
     ):
+        if split not in {"train", "val", "test"}:
+            raise ValueError(
+                "split is required and must be one of: train, val, test"
+            )
+
         self.project_root = Path(project_root).resolve()
 
         manifest_path = Path(manifest_path)
@@ -126,18 +131,12 @@ class DamagePatchDataset(Dataset):
                 f"Manifest missing required columns: {sorted(missing)}"
             )
 
-        if split is not None:
-            if split not in {"train", "val", "test"}:
-                raise ValueError(
-                    f"Unexpected split: {split!r}"
-                )
+        df = df[df["split"] == split].copy()
 
-            df = df[df["split"] == split].copy()
-
-            if df.empty:
-                raise ValueError(
-                    f"No samples found for split={split!r}"
-                )
+        if df.empty:
+            raise ValueError(
+                f"No samples found for split={split!r}"
+            )
 
         invalid_labels = sorted(
             set(df["damage"].dropna()) - set(LABEL_MAP)
