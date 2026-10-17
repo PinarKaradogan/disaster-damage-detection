@@ -22,3 +22,6 @@ data/*
 # Dataset archives
 *.tar.gz
 *.zip
+
+# TensorBoard logs
+runs/
