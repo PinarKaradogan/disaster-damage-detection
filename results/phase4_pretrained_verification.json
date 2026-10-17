@@ -1,0 +1,8 @@
+{
+  "pretrained": true,
+  "source": "timm/resnet34.a1_in1k",
+  "in_channels": 6,
+  "adaptation": "RGB repeated twice and scaled by 0.5",
+  "exact_weight_match": true,
+  "status": "PASS"
+}

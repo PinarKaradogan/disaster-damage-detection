@@ -25,3 +25,6 @@ data/*
 
 # TensorBoard logs
 runs/
+
+# Phase 4 smoke experiment artifacts
+results/phase4_smoke_*/
