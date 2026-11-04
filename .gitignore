@@ -12,6 +12,25 @@ data/*
 # Trained models
 *.pth
 *.pt
+*.ckpt
+checkpoint/
+checkpoints/
+
+# Local secrets and credentials
+.env
+.env.*
+*.pem
+*.key
+.aws/
+.ssh/
+
+# Temporary files and test caches
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.pytest_cache/
 
 # Jupyter
 .ipynb_checkpoints/
@@ -22,3 +41,12 @@ data/*
 # Dataset archives
 *.tar.gz
 *.zip
+
+# TensorBoard logs
+runs/
+
+# Per-experiment folders (checkpoints, per-run metadata, smoke runs) stay local
+# and are backed up outside the repo. Top-level reports/tables in results/ and
+# the reviewed audit summaries are tracked.
+results/*/
+!results/phase4_audit/

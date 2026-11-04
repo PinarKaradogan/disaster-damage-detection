@@ -34,6 +34,13 @@ Buildings are classified into four damage levels: no damage, minor damage, major
 
 Download xBD from [xview2.org](https://xview2.org) (registration required) and extract the archives into `data/`. The dataset is licensed CC BY-NC-SA; see the xBD paper (Gupta et al., 2019).
 
+## Phase 4 training
+
+See [epoch-boundary resume training](docs/resume-training.md) for `--resume`,
+`--session-epochs`, checkpoint recovery, and reproducibility limits.
+
+For interrupted checkpoints, see [validation-only evaluation](docs/validation-evaluation.md).
+
 ## Team
 
 - Pınar Karadoğan
