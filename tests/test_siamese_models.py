@@ -169,3 +169,49 @@ def test_real_encoder_factory_receives_pretrained_flag(monkeypatch):
     model = SiameseClassifier("resnet34", pretrained=True)
     assert seen == {"name": "resnet34", "pretrained": True, "num_classes": 0}
     assert model.backbone.num_features == 512
+
+
+@pytest.fixture(scope="module")
+def vit_siamese():
+    torch.manual_seed(0)
+    return create_model("siamese_vit_small", pretrained=False)
+
+
+def test_vit_registered_with_deit_weights_and_128_input():
+    from src.models.siamese import SIAMESE_ENCODERS
+    assert "siamese_vit_small" in MODEL_NAMES and "siamese_vit_small" in PRETRAINED_MODELS
+    encoder, kwargs = SIAMESE_ENCODERS["siamese_vit_small"]
+    assert encoder == "deit_small_patch16_224.fb_in1k" and kwargs == {"img_size": 128}
+    # Same normalization as the shared data pipeline.
+    from src.training.data import IMAGENET_MEAN, IMAGENET_STD
+    cfg = timm.models.get_pretrained_cfg(encoder)
+    assert tuple(cfg.mean) == IMAGENET_MEAN and tuple(cfg.std) == IMAGENET_STD
+
+
+def test_vit_forward_backward_shared_encoder(vit_siamese):
+    assert vit_siamese.backbone.num_features == 384
+    assert tuple(vit_siamese.backbone.pos_embed.shape) == (1, 1 + 8 * 8, 384)
+    encoders = [m for m in vit_siamese.modules() if isinstance(m, timm.models.vision_transformer.VisionTransformer)]
+    assert len(encoders) == 1
+    vit_siamese.train()
+    vit_siamese.zero_grad()
+    pre = torch.randn(2, 3, 128, 128, requires_grad=True)
+    post = torch.randn(2, 3, 128, 128, requires_grad=True)
+    logits = vit_siamese(pre, post)
+    assert logits.shape == (2, 4) and torch.isfinite(logits).all()
+    nn.functional.cross_entropy(logits, torch.tensor([1, 2])).backward()
+    assert pre.grad.abs().sum() > 0 and post.grad.abs().sum() > 0
+    patch = vit_siamese.backbone.patch_embed.proj.weight.grad
+    assert patch is not None and torch.isfinite(patch).all() and patch.abs().sum() > 0
+    vit_siamese.eval()
+    image = torch.randn(1, 3, 128, 128)
+    with torch.no_grad():
+        f_pre, f_post = vit_siamese.encode_pair(image, image.clone())
+    assert torch.equal(f_pre, f_post)
+
+
+def test_vit_pretrained_adaptation_records_position_embedding_resample():
+    from src.training.experiment import _pretrained_adaptation
+    assert "8x8" in _pretrained_adaptation("siamese_vit_small", True)
+    assert _pretrained_adaptation("siamese_vit_small", False) is None
+    assert _pretrained_adaptation("resnet34_early_fusion", True) == "RGB weights repeated twice, scaled by 0.5"

@@ -23,7 +23,10 @@ def _pretrained_adaptation(model_name, pretrained):
         return None
     if model_name == "resnet34_early_fusion":
         return "RGB weights repeated twice, scaled by 0.5"
-    return "none: shared 3-channel ImageNet encoder applied to PRE and POST"
+    adaptation = "none: shared 3-channel ImageNet encoder applied to PRE and POST"
+    if model_name == "siamese_vit_small":
+        adaptation += "; position embedding resampled by timm from 14x14 to 8x8 tokens (128x128 input)"
+    return adaptation
 
 
 def run_experiment(config, *, manifest_path, experiment_name, loss="weighted_ce", sampler="none",

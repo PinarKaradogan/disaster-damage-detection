@@ -6,8 +6,13 @@ from torch import nn
 from src.models.fusion import check_pair
 
 # Registered model name -> timm encoder name and extra create_model kwargs.
+# siamese_vit_small: ViT-Small/16 architecture with DeiT ImageNet-1k weights. They use the
+# same ImageNet mean/std as our data pipeline (the ViT augreg weights use 0.5/0.5) and the
+# same pretraining data as resnet34.a1_in1k. img_size=128 keeps the Phase 4 input; timm
+# resamples the 14x14 position embedding to the 8x8 token grid when loading.
 SIAMESE_ENCODERS = {
     "siamese_resnet34": ("resnet34", {}),
+    "siamese_vit_small": ("deit_small_patch16_224.fb_in1k", {"img_size": 128}),
 }
 
 
