@@ -9,13 +9,21 @@ import torch
 
 from src.data.constants import LABEL_MAP
 from src.data.dataset import ROOT
-from src.models import create_model
+from src.models import PRETRAINED_MODELS, create_model
 from src.training.artifacts import file_sha256, write_json
 from src.training.data import IMAGENET_MEAN, IMAGENET_STD, build_loaders
 from src.training.engine import fit
 from src.training.checkpoint import normalize_training_metadata, read_resume_checkpoint
 from src.training.losses import make_criterion
 from src.training.utils import get_device, set_training_seed
+
+
+def _pretrained_adaptation(model_name, pretrained):
+    if not pretrained or model_name not in PRETRAINED_MODELS:
+        return None
+    if model_name == "resnet34_early_fusion":
+        return "RGB weights repeated twice, scaled by 0.5"
+    return "none: shared 3-channel ImageNet encoder applied to PRE and POST"
 
 
 def run_experiment(config, *, manifest_path, experiment_name, loss="weighted_ce", sampler="none",
@@ -71,15 +79,15 @@ def run_experiment(config, *, manifest_path, experiment_name, loss="weighted_ce"
         "scheduler_t_max": actual_epochs, "amp_requested": config.amp,
         "amp": config.amp and device.type == "cuda", "device": str(device),
         "gpu": torch.cuda.get_device_name(device) if device.type == "cuda" else None,
-        "pretrained": pretrained if config.model_name == "resnet34_early_fusion" else False,
-        "pretrained_adaptation": "RGB weights repeated twice, scaled by 0.5" if config.model_name == "resnet34_early_fusion" and pretrained else None,
+        "pretrained": pretrained if config.model_name in PRETRAINED_MODELS else False,
+        "pretrained_adaptation": _pretrained_adaptation(config.model_name, pretrained),
         "parameter_count": sum(parameter.numel() for parameter in model.parameters()),
         "trainable_parameter_count": sum(parameter.numel() for parameter in model.parameters()
                                          if parameter.requires_grad),
         "samples_per_epoch": {"train": len(data.train.dataset), "val": len(data.val.dataset)},
         "versions": {"python": platform.python_version(), "torch": str(torch.__version__), "timm": timm.__version__},
     }
-    if config.model_name == "resnet34_early_fusion":
+    if config.model_name in PRETRAINED_MODELS:
         metadata["pretrained_source"] = (stored_metadata["pretrained_source"] if resume
                                          else model.backbone.pretrained_cfg)
     resume_state = None

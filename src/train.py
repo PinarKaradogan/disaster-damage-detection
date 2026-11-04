@@ -5,6 +5,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from src.data.dataset import ROOT
+from src.models import MODEL_NAMES
 from src.training.config import TrainingConfig
 from src.training.experiment import run_experiment
 
@@ -25,7 +26,7 @@ def nonnegative_int(value):
 
 def build_parser():
     parser = argparse.ArgumentParser(description="Phase 4 train/val only; selection by val macro F1")
-    parser.add_argument("--model", required=True, choices=["simple_cnn", "resnet34_early_fusion"])
+    parser.add_argument("--model", required=True, choices=list(MODEL_NAMES))
     parser.add_argument("--training-mode", choices=["full", "head_only"], default="full",
                         help="ResNet34: train all parameters or only the classification head")
     parser.add_argument("--loss", choices=["ce", "weighted_ce", "focal"], default="weighted_ce")
