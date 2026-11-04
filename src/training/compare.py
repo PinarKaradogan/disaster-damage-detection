@@ -13,13 +13,17 @@ from src.training.artifacts import write_json
 POLICY_KEYS = (
     "manifest_sha256", "split_counts", "seed", "input_size", "epochs", "optimizer",
     "learning_rate", "weight_decay", "scheduler", "scheduler_eta_min", "scheduler_t_max",
-    "early_stopping_patience", "augmentation", "normalization", "amp", "num_workers",
+    "early_stopping_patience", "augmentation", "normalization", "amp",
     "label_map", "class_weight_formula", "train_class_counts",
 )
+# Loader-only settings that may differ between runs. They do not change the model, loss,
+# data, split or metric, but can change load order of augmentation RNG draws across
+# workers, so every value is recorded in the CSV and the JSON summary.
+ALLOWED_DIFFERENCES = ("num_workers",)
 STRATEGIES = {("weighted_ce", "none"), ("focal", "none"), ("ce", "weighted")}
 COLUMNS = ["model", "val_macro_f1", "no_damage_f1", "minor_damage_f1", "major_damage_f1",
            "destroyed_f1", "best_epoch", "parameter_count", "training_time_seconds",
-           "loss_strategy", "batch_size", "seed"]
+           "loss_strategy", "batch_size", "seed", "num_workers"]
 
 
 def compare_runs(run_dirs, *, kind, output_path):
@@ -73,6 +77,7 @@ def compare_runs(run_dirs, *, kind, output_path):
                 training_time_seconds=metrics["training_time_seconds"],
                 loss_strategy=f"{config['loss']}+sampler:{config['sampler']}",
                 batch_size=config["batch_size"], seed=config["seed"],
+                num_workers=config["num_workers"],
             ))
     winner = max(runs, key=lambda run: run[2]["best_val_macro_f1"])
     summary = {
@@ -82,6 +87,11 @@ def compare_runs(run_dirs, *, kind, output_path):
         "best_val_macro_f1": winner[2]["best_val_macro_f1"],
         "runs": [str(path) for path, _, _ in runs],
         "batch_sizes": {config["model_name"]: config["batch_size"] for _, config, _ in runs},
+        "allowed_policy_differences": {
+            key: {str(path): config[key] for path, config, _ in runs}
+            for key in ALLOWED_DIFFERENCES
+            if len({json.dumps(config[key]) for _, config, _ in runs}) > 1
+        },
         "test_used": False,
     }
     write_json(output_path.with_suffix(".json"), summary)

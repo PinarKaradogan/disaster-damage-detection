@@ -12,6 +12,7 @@ import math
 import multiprocessing
 from pathlib import Path
 
+import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 
@@ -24,7 +25,8 @@ from src.training.data import deterministic_transform
 from src.training.engine import run_epoch
 from src.training.losses import make_criterion
 
-REQUIRED_FILES = ("best.pth", "last.pth", "config.json", "metrics.json", "history.csv", "status.json")
+METADATA_FILES = ("config.json", "metrics.json", "history.csv", "status.json")
+REQUIRED_FILES = ("best.pth", "last.pth", *METADATA_FILES)
 REEVAL_TOLERANCE = 1e-4
 
 
@@ -36,17 +38,26 @@ def _passed(value):
     return isinstance(value, int) and value > 0
 
 
-def audit_run(name, *, output, num_workers=4, project_root=ROOT):
+def audit_run(name, *, output, num_workers=4, project_root=ROOT, metadata_only=False, manifest=None):
+    """Audit results/<name>.
+
+    metadata_only=True is for runs whose checkpoints were not shared (e.g. from another
+    machine): checkpoint integrity and best.pth re-evaluation are skipped, all metadata
+    consistency checks still run. ``manifest`` overrides the recorded (machine-specific)
+    manifest path; its SHA-256 must still match the recorded value.
+    """
     output = Path(output)
     if output.exists():
         raise FileExistsError(f"Refusing to overwrite: {output}")
     run_dir = Path(project_root) / "results" / name
     if output.resolve().is_relative_to(run_dir.resolve()):
         raise ValueError("Write the audit report outside the experiment folder")
-    checks = {"files_present": {f: (run_dir / f).is_file() for f in REQUIRED_FILES}}
+    required = METADATA_FILES if metadata_only else REQUIRED_FILES
+    checks = {"files_present": {f: (run_dir / f).is_file() for f in required}}
     if not all(checks["files_present"].values()):
         raise FileNotFoundError(f"Missing run files: {checks['files_present']}")
-    checks["tensorboard_events"] = len(list((Path(project_root) / "runs" / name).glob("events.out.tfevents.*")))
+    if not metadata_only:
+        checks["tensorboard_events"] = len(list((Path(project_root) / "runs" / name).glob("events.out.tfevents.*")))
 
     cfg = json.loads((run_dir / "config.json").read_text(encoding="utf-8"))
     met = json.loads((run_dir / "metrics.json").read_text(encoding="utf-8"))
@@ -54,7 +65,7 @@ def audit_run(name, *, output, num_workers=4, project_root=ROOT):
     with (run_dir / "history.csv").open(newline="", encoding="utf-8") as handle:
         history = list(csv.DictReader(handle))
 
-    manifest = Path(cfg["manifest_path"])
+    manifest = Path(manifest) if manifest is not None else Path(cfg["manifest_path"])
     checks["status_completed"] = status["status"] == "completed"
     checks["not_smoke"] = cfg["smoke"] is False and met["smoke"] is False
     checks["evaluation_split_val"] = cfg["evaluation_split"] == "val" == met["evaluation_split"]
@@ -70,6 +81,23 @@ def audit_run(name, *, output, num_workers=4, project_root=ROOT):
         met["early_stopped"] is True and len(later) == cfg["early_stopping_patience"]
         and all(v <= met["best_val_macro_f1"] for v in later)
     )
+
+    if metadata_only:
+        splits = pd.read_csv(manifest, usecols=["split", "damage"])
+        val_labels = splits.loc[splits["split"] == "val", "damage"]
+        train_labels = splits.loc[splits["split"] == "train", "damage"].map(LABEL_MAP)
+        checks["val_count_matches_config"] = len(val_labels) == cfg["split_counts"]["val"]
+        checks["train_class_counts_match_manifest"] = (
+            [int((train_labels == i).sum()) for i in range(4)] == cfg["train_class_counts"])
+        report = dict(
+            experiment=name, test_used=False, training_performed=False, metadata_only=True,
+            checks=checks, all_passed=all(_passed(v) for v in checks.values()),
+            recorded=dict(best_epoch=met["best_epoch"], macro_f1=met["best_val_macro_f1"],
+                          class_f1=met["class_f1"], accuracy=met["accuracy"]),
+            not_verified=["checkpoint integrity", "best.pth re-evaluation (checkpoints not shared)"],
+            versions_recorded=cfg["versions"], num_workers_recorded=cfg["num_workers"],
+        )
+        return _write_report(output, report)
 
     best = torch.load(run_dir / "best.pth", map_location="cpu", weights_only=False)
     last = torch.load(run_dir / "last.pth", map_location="cpu", weights_only=False)
@@ -113,6 +141,10 @@ def audit_run(name, *, output, num_workers=4, project_root=ROOT):
         confusion_matrix_axes="rows=true, columns=predicted; label IDs 0..3",
         versions_recorded=cfg["versions"], num_workers_recorded=cfg["num_workers"],
     )
+    return _write_report(output, report)
+
+
+def _write_report(output, report):
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open("x", encoding="utf-8") as handle:
         json.dump(report, handle, indent=2)
@@ -125,8 +157,14 @@ def main(argv=None):
     parser.add_argument("--experiment", required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--num-workers", type=int, default=4)
+    parser.add_argument("--metadata-only", action="store_true",
+                        help="skip checkpoint checks and re-evaluation (checkpoints not available)")
+    parser.add_argument("--manifest", type=Path, default=None,
+                        help="local manifest path when the recorded path is from another machine")
     args = parser.parse_args(argv)
-    print(json.dumps(audit_run(args.experiment, output=args.output, num_workers=args.num_workers), indent=2))
+    report = audit_run(args.experiment, output=args.output, num_workers=args.num_workers,
+                       metadata_only=args.metadata_only, manifest=args.manifest)
+    print(json.dumps(report, indent=2))
 
 
 if __name__ == "__main__":

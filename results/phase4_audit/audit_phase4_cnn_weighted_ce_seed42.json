@@ -1,0 +1,47 @@
+{
+  "experiment": "phase4_cnn_weighted_ce_seed42",
+  "test_used": false,
+  "training_performed": false,
+  "metadata_only": true,
+  "checks": {
+    "files_present": {
+      "config.json": true,
+      "metrics.json": true,
+      "history.csv": true,
+      "status.json": true
+    },
+    "status_completed": true,
+    "not_smoke": true,
+    "evaluation_split_val": true,
+    "manifest_sha256_matches_file": true,
+    "label_map_matches_code": true,
+    "history_rows_equal_epochs_completed": true,
+    "history_best_epoch_matches_metrics": true,
+    "history_best_f1_matches_metrics": true,
+    "early_stop_consistent": true,
+    "val_count_matches_config": true,
+    "train_class_counts_match_manifest": true
+  },
+  "all_passed": true,
+  "recorded": {
+    "best_epoch": 10,
+    "macro_f1": 0.6976926497349434,
+    "class_f1": [
+      0.8824663992897162,
+      0.5340314136125655,
+      0.5899590605472959,
+      0.7843137254901961
+    ],
+    "accuracy": 0.7928947882100332
+  },
+  "not_verified": [
+    "checkpoint integrity",
+    "best.pth re-evaluation (checkpoints not shared)"
+  ],
+  "versions_recorded": {
+    "python": "3.13.7",
+    "torch": "2.14.1+cu132",
+    "timm": "1.0.30"
+  },
+  "num_workers_recorded": 2
+}
