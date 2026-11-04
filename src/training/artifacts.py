@@ -31,11 +31,14 @@ def write_json(path, values):
         handle.write(json.dumps(values, indent=2, allow_nan=False) + "\n")
 
 
-def write_history(path, history):
+CLASSIFICATION_HISTORY_FIELDS = (
+    "epoch", "train_loss", "train_macro_f1", "val_loss", "val_macro_f1", "learning_rate",
+)
+
+
+def write_history(path, history, fieldnames=CLASSIFICATION_HISTORY_FIELDS):
     with atomic_output(path) as handle:
-        writer = csv.DictWriter(handle, fieldnames=[
-            "epoch", "train_loss", "train_macro_f1", "val_loss", "val_macro_f1", "learning_rate",
-        ])
+        writer = csv.DictWriter(handle, fieldnames=list(fieldnames))
         writer.writeheader()
         writer.writerows(history)
 
