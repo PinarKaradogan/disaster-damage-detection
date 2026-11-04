@@ -1,0 +1,102 @@
+{
+  "experiment": "phase5_siamese_resnet34_focal_seed42_w4",
+  "test_used": false,
+  "training_performed": false,
+  "checks": {
+    "files_present": {
+      "best.pth": true,
+      "last.pth": true,
+      "config.json": true,
+      "metrics.json": true,
+      "history.csv": true,
+      "status.json": true
+    },
+    "tensorboard_events": 1,
+    "status_completed": true,
+    "not_smoke": true,
+    "evaluation_split_val": true,
+    "manifest_sha256_matches_file": true,
+    "label_map_matches_code": true,
+    "history_rows_equal_epochs_completed": true,
+    "history_best_epoch_matches_metrics": true,
+    "history_best_f1_matches_metrics": true,
+    "early_stop_consistent": true,
+    "best_ckpt_epoch_matches": true,
+    "best_ckpt_config_equals_config_json": true,
+    "last_ckpt_epoch_is_final": true,
+    "last_ckpt_finished_flag": true,
+    "last_ckpt_has_optimizer_rng_earlystop": true,
+    "last_embedded_best_equals_best_pth": true,
+    "val_count_matches_config": true,
+    "val_split_only": true,
+    "reeval_macro_f1_matches_metrics_1e-4": true
+  },
+  "all_passed": true,
+  "recorded": {
+    "best_epoch": 4,
+    "macro_f1": 0.7772952479251111,
+    "class_f1": [
+      0.9443061777556551,
+      0.6203976435935199,
+      0.6729388462490715,
+      0.8715383241021976
+    ]
+  },
+  "reevaluated": {
+    "macro_f1": 0.7772952479251111,
+    "class_f1": [
+      0.9443061777556551,
+      0.6203976435935199,
+      0.6729388462490715,
+      0.8715383241021976
+    ],
+    "class_precision": [
+      0.9266254206013242,
+      0.6697138314785374,
+      0.6923076923076923,
+      0.9
+    ],
+    "class_recall": [
+      0.9626747857465043,
+      0.5778463648834019,
+      0.6546242774566474,
+      0.8448216141323173
+    ],
+    "confusion_matrix": [
+      [
+        17074,
+        398,
+        139,
+        125
+      ],
+      [
+        819,
+        1685,
+        350,
+        62
+      ],
+      [
+        282,
+        351,
+        1359,
+        84
+      ],
+      [
+        251,
+        82,
+        115,
+        2439
+      ]
+    ],
+    "accuracy": 0.8806168260784697,
+    "loss": 0.14265640568618612
+  },
+  "reeval_minus_recorded": 0.0,
+  "confusion_matrix_axes": "rows=true, columns=predicted; label IDs 0..3",
+  "versions_recorded": {
+    "python": "3.13.16",
+    "torch": "2.14.1+cu132",
+    "timm": "1.0.30"
+  },
+  "num_workers_recorded": 4
+}
