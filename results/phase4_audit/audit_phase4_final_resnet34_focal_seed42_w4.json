@@ -1,0 +1,101 @@
+{
+  "experiment": "phase4_final_resnet34_focal_seed42_w4",
+  "test_used": false,
+  "training_performed": false,
+  "checks": {
+    "files_present": {
+      "best.pth": true,
+      "last.pth": true,
+      "config.json": true,
+      "metrics.json": true,
+      "history.csv": true,
+      "status.json": true
+    },
+    "tensorboard_events": 1,
+    "status_completed": true,
+    "not_smoke": true,
+    "evaluation_split_val": true,
+    "manifest_sha256_matches_file": true,
+    "label_map_matches_code": true,
+    "history_rows_equal_epochs_completed": true,
+    "history_best_epoch_matches_metrics": true,
+    "history_best_f1_matches_metrics": true,
+    "early_stop_consistent": true,
+    "best_ckpt_epoch_matches": true,
+    "best_ckpt_config_equals_config_json": true,
+    "last_ckpt_epoch_is_final": true,
+    "last_ckpt_finished_flag": true,
+    "last_ckpt_has_optimizer_rng_earlystop": true,
+    "last_embedded_best_equals_best_pth": true,
+    "val_count_matches_config": true,
+    "val_split_only": true,
+    "reeval_macro_f1_matches_metrics_1e-4": true
+  },
+  "all_passed": true,
+  "recorded": {
+    "best_epoch": 4,
+    "macro_f1": 0.7789012622077182,
+    "class_f1": [
+      0.9423572795075831,
+      0.6293653773939166,
+      0.669790382244143,
+      0.87409200968523
+    ]
+  },
+  "reevaluated": {
+    "loss": 0.14259755830226853,
+    "macro_f1": 0.7789012622077182,
+    "class_f1": [
+      0.9423572795075831,
+      0.6293653773939166,
+      0.669790382244143,
+      0.87409200968523
+    ],
+    "class_precision": [
+      0.9270634444383831,
+      0.6954356846473029,
+      0.6862051541182416,
+      0.8728842832469775
+    ],
+    "class_recall": [
+      0.9581641858367163,
+      0.5747599451303155,
+      0.6541425818882466,
+      0.8753030827848978
+    ],
+    "confusion_matrix": [
+      [
+        16994,
+        344,
+        232,
+        166
+      ],
+      [
+        843,
+        1676,
+        290,
+        107
+      ],
+      [
+        311,
+        312,
+        1358,
+        95
+      ],
+      [
+        183,
+        78,
+        99,
+        2527
+      ]
+    ],
+    "accuracy": 0.8805387468280305
+  },
+  "reeval_minus_recorded": 0.0,
+  "versions_recorded": {
+    "python": "3.13.16",
+    "torch": "2.14.1+cu132",
+    "timm": "1.0.30"
+  },
+  "num_workers_recorded": 4
+}

@@ -45,5 +45,8 @@ checkpoints/
 # TensorBoard logs
 runs/
 
-# Phase 4 smoke experiment artifacts
-results/
+# Per-experiment folders (checkpoints, per-run metadata, smoke runs) stay local
+# and are backed up outside the repo. Top-level reports/tables in results/ and
+# the reviewed audit summaries are tracked.
+results/*/
+!results/phase4_audit/
