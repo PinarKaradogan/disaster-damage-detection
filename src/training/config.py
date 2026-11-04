@@ -25,6 +25,13 @@ class TrainingConfig:
     scheduler_eta_min: float = 1e-6
 
     amp: bool = True
+    training_mode: str = "full"
+
+    def __post_init__(self):
+        if self.training_mode not in {"full", "head_only"}:
+            raise ValueError("training_mode must be full or head_only")
+        if self.training_mode == "head_only" and self.model_name != "resnet34_early_fusion":
+            raise ValueError("head_only training requires resnet34_early_fusion")
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

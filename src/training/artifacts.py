@@ -2,15 +2,37 @@
 import csv
 import hashlib
 import json
+import os
+import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 
 
+@contextmanager
+def atomic_output(path, *, binary=False):
+    """Flush a sibling temporary file before atomically replacing the destination."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, temporary = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    try:
+        kwargs = {} if binary else {"encoding": "utf-8", "newline": ""}
+        with os.fdopen(fd, "wb" if binary else "w", **kwargs) as handle:
+            yield handle
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+
+
 def write_json(path, values):
-    Path(path).write_text(json.dumps(values, indent=2, allow_nan=False) + "\n", encoding="utf-8")
+    with atomic_output(path) as handle:
+        handle.write(json.dumps(values, indent=2, allow_nan=False) + "\n")
 
 
 def write_history(path, history):
-    with Path(path).open("w", newline="", encoding="utf-8") as handle:
+    with atomic_output(path) as handle:
         writer = csv.DictWriter(handle, fieldnames=[
             "epoch", "train_loss", "train_macro_f1", "val_loss", "val_macro_f1", "learning_rate",
         ])

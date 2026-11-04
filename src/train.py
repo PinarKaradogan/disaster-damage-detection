@@ -26,10 +26,15 @@ def nonnegative_int(value):
 def build_parser():
     parser = argparse.ArgumentParser(description="Phase 4 train/val only; selection by val macro F1")
     parser.add_argument("--model", required=True, choices=["simple_cnn", "resnet34_early_fusion"])
+    parser.add_argument("--training-mode", choices=["full", "head_only"], default="full",
+                        help="ResNet34: train all parameters or only the classification head")
     parser.add_argument("--loss", choices=["ce", "weighted_ce", "focal"], default="weighted_ce")
     parser.add_argument("--sampler", choices=["none", "weighted"], default="none")
     parser.add_argument("--experiment-name", required=True)
     parser.add_argument("--epochs", type=positive_int, default=30)
+    parser.add_argument("--resume", action="store_true", help="resume this experiment from its validated last.pth")
+    parser.add_argument("--session-epochs", type=positive_int, default=None,
+                        help="maximum new epochs this session; --epochs remains the total target")
     parser.add_argument("--batch-size", type=positive_int, default=None,
                         help="default 32; in smoke mode default 8")
     parser.add_argument("--num-workers", type=nonnegative_int, default=0)
@@ -44,13 +49,16 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if args.sampler == "weighted" and args.loss != "ce":
         parser.error("--sampler weighted requires --loss ce")
+    if args.training_mode == "head_only" and args.model != "resnet34_early_fusion":
+        parser.error("--training-mode head_only requires --model resnet34_early_fusion")
     config = TrainingConfig(model_name=args.model, epochs=args.epochs,
-                            num_workers=args.num_workers, seed=args.seed)
+                            num_workers=args.num_workers, seed=args.seed, training_mode=args.training_mode)
     if args.batch_size is not None:
         config = replace(config, batch_size=args.batch_size, smoke_batch_size=args.batch_size)
     result = run_experiment(config, manifest_path=args.manifest,
                             experiment_name=args.experiment_name, loss=args.loss,
-                            sampler=args.sampler, smoke=args.smoke)
+                            sampler=args.sampler, smoke=args.smoke, resume=args.resume,
+                            session_epochs=args.session_epochs)
     print(json.dumps(result, indent=2))
 
 

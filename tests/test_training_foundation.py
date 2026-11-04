@@ -17,7 +17,7 @@ def test_config_defaults():
         batch_size=32, smoke_batch_size=8, num_workers=0, epochs=30,
         early_stopping_patience=5, optimizer="adamw", learning_rate=3e-4,
         weight_decay=1e-4, scheduler="cosine", scheduler_eta_min=1e-6,
-        amp=True,
+        amp=True, training_mode="full",
     )
     with pytest.raises(TypeError):
         TrainingConfig()

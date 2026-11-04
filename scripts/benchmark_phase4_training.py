@@ -22,6 +22,7 @@ from torch.utils.data import DataLoader
 
 from scripts.benchmark_phase4_data import record_batch, seed_cpu
 from src.data.dataset import ROOT
+from src.models import create_model
 from src.models.simple_cnn import SimpleCNN
 from src.training.config import TrainingConfig
 from src.training.data import build_loaders
@@ -29,6 +30,21 @@ from src.training.losses import make_criterion
 
 MIB = 1024**2
 GIB = 1024**3
+
+
+def make_benchmark_model(args, *, pretrained=True):
+    try:
+        return create_model(args.model, training_mode=args.training_mode, pretrained=pretrained)
+    except Exception as exc:
+        if args.model == "resnet34_early_fusion" and pretrained:
+            raise RuntimeError("Pretrained ResNet34 initialization failed; weights must be accessible, "
+                               "and random-weight fallback is disabled") from exc
+        raise
+
+
+def make_benchmark_optimizer(model, config):
+    return torch.optim.AdamW((p for p in model.parameters() if p.requires_grad),
+                             lr=config.learning_rate, weight_decay=config.weight_decay)
 
 
 class LimitedBatchSampler:
@@ -158,7 +174,9 @@ def training_step(model, batch, criterion, optimizer, scaler, *, training):
             scaler.update()
         compute_end.record()
         # These synchronizing operations also occur in the real Phase 4 engine.
-        mass = criterion.weight[labels].sum().item()
+        mass = float(labels.numel())
+        if isinstance(criterion, torch.nn.CrossEntropyLoss) and criterion.weight is not None:
+            mass = criterion.weight[labels].sum().item()
         loss_mass = loss.item() * mass
         targets = labels.detach().cpu().tolist()
         predictions = logits.detach().argmax(dim=1).cpu().tolist()
@@ -321,6 +339,11 @@ def print_summary(configurations, counts, batch_size):
 
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--model", choices=["simple_cnn", "resnet34_early_fusion"], default="simple_cnn")
+    parser.add_argument("--training-mode", choices=["full", "head_only"], default="full")
+    parser.add_argument("--loss", choices=["ce", "weighted_ce", "focal"], default="weighted_ce")
+    parser.add_argument("--sampler", choices=["none"], default="none",
+                        help="benchmark uses the original shuffled train loader, without weighted sampling")
     parser.add_argument("--workers", nargs="+", type=int, default=[0, 2, 4])
     parser.add_argument("--persistent", nargs="+", choices=["false", "true"], default=["false", "true"])
     parser.add_argument("--batch-size", type=int, default=32)
@@ -332,6 +355,8 @@ def parse_args(argv=None):
     parser.add_argument("--manifest", type=Path, default=ROOT / "data/processed/patches_full/patches.csv")
     parser.add_argument("--json-output", type=Path, help="Optional small NEW JSON file; never overwrite")
     args = parser.parse_args(argv)
+    if args.training_mode == "head_only" and args.model != "resnet34_early_fusion":
+        parser.error("head_only requires --model resnet34_early_fusion")
     if min(args.batch_size, args.batches, args.warmup_batches, args.val_batches, args.val_warmup_batches) < 1:
         parser.error("Batch counts and batch size must be positive")
     if any(w < 0 for w in args.workers) or len(set(args.workers)) != len(args.workers):
@@ -355,13 +380,19 @@ def main(argv=None):
     device = torch.cuda.get_device_properties(0)
     seed_cpu(args.seed)
     torch.cuda.manual_seed_all(args.seed)
-    initial_state = {key: value.clone() for key, value in SimpleCNN().state_dict().items()}
+    initial_model = make_benchmark_model(args)
+    parameter_count = sum(p.numel() for p in initial_model.parameters())
+    trainable_parameter_count = sum(p.numel() for p in initial_model.parameters() if p.requires_grad)
+    initial_state = {key: value.clone() for key, value in initial_model.state_dict().items()}
+    del initial_model
     initial_sha = state_digest(initial_state)
     print(f"Python={platform.python_version()} torch={torch.__version__} GPU={device.name} "
           f"VRAM={device.total_memory / MIB:.0f} MiB; CPU threads={torch.get_num_threads()}; "
           f"cudnn.benchmark={torch.backends.cudnn.benchmark}; TF32={torch.backends.cudnn.allow_tf32}", flush=True)
     print(f"seed={args.seed}; batch={args.batch_size}; input=128; AdamW lr=0.0003 wd=0.0001; "
-          f"Weighted CE from full train labels; CUDA AMP float16; init_SHA256={initial_sha}", flush=True)
+          f"model={args.model}; training_mode={args.training_mode}; loss={args.loss}; sampler={args.sampler}; "
+          f"pretrained={args.model == 'resnet34_early_fusion'}; parameters={parameter_count}; "
+          f"trainable={trainable_parameter_count}; CUDA AMP float16; init_SHA256={initial_sha}", flush=True)
     print(f"Two bounded epochs per configuration: train {args.warmup_batches}+{args.batches}, "
           f"val {args.val_warmup_batches}+{args.val_batches} warmup+measured. "
           "Default loader pin_memory=False/prefetch=2 retained. No test patches, checkpoints or full training.", flush=True)
@@ -382,23 +413,23 @@ def main(argv=None):
             torch.cuda.empty_cache()
             with HostMemoryMonitor() as host:
                 try:
-                    config = TrainingConfig("simple_cnn", seed=args.seed, batch_size=args.batch_size,
-                                            num_workers=workers)
-                    data = build_loaders(config, args.manifest, project_root=ROOT)
+                    config = TrainingConfig(args.model, training_mode=args.training_mode,
+                                            seed=args.seed, batch_size=args.batch_size, num_workers=workers)
+                    data = build_loaders(config, args.manifest, sampler=args.sampler, project_root=ROOT)
                     counts = data.split_counts
-                    print(f"Full split pairs={counts}; class_weights={data.class_weights.tolist()}", flush=True)
+                    print(f"Manifest split pairs={counts}; train class_weights={data.class_weights.tolist()}", flush=True)
                     train_loader = bounded_loader(data.train, batches=args.warmup_batches + args.batches,
                                                   persistent=persistent, seed=args.seed)
                     val_loader = bounded_loader(data.val, batches=args.val_warmup_batches + args.val_batches,
                                                 persistent=persistent, seed=args.seed)
-                    model = SimpleCNN()
+                    # The initial pretrained snapshot is loaded strictly below. No new download.
+                    model = make_benchmark_model(args, pretrained=False)
                     model.load_state_dict(initial_state)
                     if state_digest(model.state_dict()) != initial_sha:
                         raise RuntimeError("Initial weights differ")
                     model.cuda()
-                    criterion = make_criterion("weighted_ce", weights=data.class_weights).cuda()
-                    optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate,
-                                                  weight_decay=config.weight_decay)
+                    criterion = make_criterion(args.loss, args.sampler, weights=data.class_weights).cuda()
+                    optimizer = make_benchmark_optimizer(model, config)
                     scaler = torch.amp.GradScaler("cuda", enabled=True)
                     for epoch in (1, 2):
                         # The original train generator belongs only to the sampler;
@@ -445,6 +476,8 @@ def main(argv=None):
                        "json_output": str(args.json_output)}, gpu=device.name,
                        vram_bytes=device.total_memory, python=platform.python_version(),
                        torch=str(torch.__version__), initial_weights_sha256=initial_sha,
+                       pretrained=args.model == "resnet34_early_fusion", parameter_count=parameter_count,
+                       trainable_parameter_count=trainable_parameter_count,
                        split_counts=counts, configurations=[
                            {**c, "passes": [asdict(r) for r in c["passes"]]} for c in configurations])
         with args.json_output.open("x", encoding="utf-8") as stream:

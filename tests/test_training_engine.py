@@ -1,5 +1,6 @@
 from dataclasses import replace
 import json
+import sys
 
 import pytest
 import torch
@@ -46,6 +47,52 @@ def test_train_and_validation_steps():
     assert not model.training
     assert train["loss"] > 0 and val["loss"] > 0
     assert 0 <= val["macro_f1"] <= 1
+
+
+@pytest.mark.parametrize("training", [False, True])
+def test_epoch_progress_before_loader_and_every_100_batches(monkeypatch, training):
+    import src.training.engine as engine
+
+    messages = []
+
+    def record_print(message, *, file, flush):
+        assert file is sys.stderr
+        assert flush is True
+        messages.append(message)
+
+    monkeypatch.setattr(engine, "print", record_print, raising=False)
+    phase = "train" if training else "val"
+    batch = {"pre": torch.zeros(1, 1), "post": torch.zeros(1, 1),
+             "label": torch.zeros(1, dtype=torch.long)}
+
+    class Loader:
+        def __iter__(self):
+            # The start message must appear before DataLoader begins waiting.
+            assert len(messages) == 1
+            assert "epoch_start completed_batches=0" in messages[0]
+            assert "waiting_for_first_batch" in messages[0]
+            for _ in range(201):
+                yield batch
+
+    class TinyModel(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.logits = torch.nn.Parameter(torch.zeros(1, 4))
+
+        def forward(self, pre, post):
+            # Receipt must be logged before the first model operation.
+            assert "first_batch_received completed_batches=0" in messages[1]
+            return self.logits
+
+    model = TinyModel()
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01) if training else None
+    run_epoch(model, Loader(), torch.nn.CrossEntropyLoss(), torch.device("cpu"),
+              optimizer=optimizer)
+    assert len(messages) == 4
+    assert "completed_batches=100 " in messages[2]
+    assert "completed_batches=200 " in messages[3]
+    assert all(message.startswith(f"[{phase}]") and "elapsed=" in message
+               for message in messages)
 
 
 def test_checkpoint_roundtrip(tmp_path):
@@ -128,7 +175,33 @@ def test_cpu_experiment_metadata(synthetic_manifest, tmp_path, loss, sampler):
                        results_root=tmp_path / "results", runs_root=tmp_path / "runs")
 
 
+def test_training_cli_json_stdout_and_progress_stderr(synthetic_manifest, tmp_path, monkeypatch, capsys):
+    import src.train as training_cli
+
+    root, manifest = synthetic_manifest
+
+    def isolated_experiment(config, **kwargs):
+        return run_experiment(replace(config, input_size=16, amp=False),
+                              results_root=tmp_path / "results", runs_root=tmp_path / "runs",
+                              project_root=root, device="cpu", **kwargs)
+
+    monkeypatch.setattr(training_cli, "run_experiment", isolated_experiment)
+    training_cli.main(["--model", "simple_cnn", "--experiment-name", "cli_json",
+                       "--manifest", str(manifest), "--epochs", "1", "--batch-size", "2"])
+    captured = capsys.readouterr()
+    result = json.loads(captured.out)
+    assert result["status"] == "completed" and result["smoke"] is False
+    for phase in ("train", "val"):
+        assert f"[{phase}] epoch_start completed_batches=0" in captured.err
+        assert f"[{phase}] first_batch_received completed_batches=0" in captured.err
+    assert "parameters total=" in captured.err
+    assert "epoch=1 train_loss=" in captured.err and "val_macro_f1=" in captured.err
+
+
 def test_cli_parser_and_invalid_treatments():
+    defaults = build_parser().parse_args(["--model", "simple_cnn", "--experiment-name", "full"])
+    assert defaults.smoke is False and defaults.training_mode == "full"
+    assert defaults.manifest.as_posix().endswith("data/processed/patches_full/patches.csv")
     args = build_parser().parse_args(["--model", "simple_cnn", "--experiment-name", "smoke", "--smoke"])
     assert args.smoke and args.num_workers == 0
     for extra in [["--split", "test"], ["--batch-size", "0"], ["--epochs", "-1"], ["--num-workers", "-1"]]:

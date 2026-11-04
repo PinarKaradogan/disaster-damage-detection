@@ -12,6 +12,25 @@ data/*
 # Trained models
 *.pth
 *.pt
+*.ckpt
+checkpoint/
+checkpoints/
+
+# Local secrets and credentials
+.env
+.env.*
+*.pem
+*.key
+.aws/
+.ssh/
+
+# Temporary files and test caches
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.pytest_cache/
 
 # Jupyter
 .ipynb_checkpoints/
@@ -27,4 +46,4 @@ data/*
 runs/
 
 # Phase 4 smoke experiment artifacts
-results/phase4_smoke_*/
+results/
