@@ -5,7 +5,8 @@ python -m src.evaluation.evaluate_test segmentation --experiment <unet run>
 python -m src.evaluation.evaluate_test two-stage    [--threshold 0.9 --split-erosion 4]
 
 Guards (all must pass before any test file is read):
-- results/phase6_protocol.md is committed and has no uncommitted changes; its commit is recorded;
+- results/phase6_protocol.md says "Durum: **onaylandı**" (a draft cannot open the test set);
+- it is committed and has no uncommitted changes; its commit is recorded;
 - the run's best.pth SHA-256 equals the value pre-registered in the protocol;
 - the output file does not exist yet (each evaluation runs once; nothing is overwritten).
 Outputs go to results/phase6_test/: <kind>_<name>.json (+ a per-building / per-image CSV).
@@ -36,6 +37,7 @@ from src.training.metrics import classification_metrics
 PROTOCOL = "results/phase6_protocol.md"
 OUTPUT_DIR = "results/phase6_test"
 TEST_SPLIT_FILE = "splits/standard/test_images.txt"
+APPROVED_MARKER = "Durum: **onaylandı**"
 SHA_ROW = re.compile(r"\|\s*`(?P<run>[^`]+)`[^|]*\|\s*`(?P<sha>[0-9a-f]{64})`")
 
 
@@ -45,7 +47,10 @@ def protocol_commit(project_root=ROOT, *, check_git=True):
     path = Path(project_root) / PROTOCOL
     if not path.is_file():
         raise FileNotFoundError(f"Missing test protocol: {path}")
-    registered = {m["run"]: m["sha"] for m in SHA_ROW.finditer(path.read_text(encoding="utf-8"))}
+    text = path.read_text(encoding="utf-8")
+    if APPROVED_MARKER not in text:
+        raise RuntimeError(f"Test protocol is not approved yet (expected the line '{APPROVED_MARKER}...')")
+    registered = {m["run"]: m["sha"] for m in SHA_ROW.finditer(text)}
     if not check_git:
         return None, registered
 

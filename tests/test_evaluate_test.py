@@ -18,11 +18,12 @@ from test_training_data import synthetic_manifest  # noqa: F401  (pytest fixture
 SHA_A = "a" * 64
 
 
-def write_protocol(root, rows):
+def write_protocol(root, rows, approved=True):
     path = root / PROTOCOL
     path.parent.mkdir(parents=True, exist_ok=True)
     table = "\n".join(f"| role | `{run}` | `{sha}` | x |" for run, sha in rows)
-    path.write_text("# protocol\n\n| Rol | Koşu | SHA | Val |\n|---|---|---|---|\n" + table + "\n"
+    status = "Durum: **onaylandı**" if approved else "Durum: **taslak, onay bekliyor**"
+    path.write_text("# protocol\n\n" + status + "\n\n| Rol | Koşu | SHA | Val |\n|---|---|---|---|\n" + table + "\n"
                     "| CNN | `pending_run` | later* | x |\n", encoding="utf-8")
     return path
 
@@ -48,7 +49,8 @@ def test_protocol_must_be_committed_and_clean(tmp_path):
     git(tmp_path, "commit", "-q", "-m", "protocol")
     commit, registered = protocol_commit(tmp_path)
     assert len(commit) == 40 and registered == {"run_a": SHA_A}
-    (tmp_path / PROTOCOL).write_text("# changed after commit\n", encoding="utf-8")
+    with (tmp_path / PROTOCOL).open("a", encoding="utf-8") as handle:
+        handle.write("\nchanged after commit\n")
     with pytest.raises(RuntimeError, match="uncommitted"):
         protocol_commit(tmp_path)
 
@@ -107,3 +109,9 @@ def test_xview2_helpers():
     # class 1: TP 1, FN 1 -> F1 2/3
     assert result["class_f1"][0] == pytest.approx(1.0)
     assert result["class_f1"][1] == pytest.approx(2 / 3)
+
+
+def test_draft_protocol_cannot_open_the_test_set(tmp_path):
+    write_protocol(tmp_path, [("run_a", SHA_A)], approved=False)
+    with pytest.raises(RuntimeError, match="not approved"):
+        protocol_commit(tmp_path, check_git=False)
