@@ -11,7 +11,7 @@ bu yüzden aşağıdaki validation skorları iyimser olabilir. Tarafsız tahmin 
 | 5.1 Siamese ResNet34 | `phase5_siamese_resnet34_focal_seed42_w4` | Macro-F1 0,7773 |
 | 5.2 Siamese ViT-Small (DeiT-S) | `phase5_siamese_vit_small_focal_seed42_w4` | Macro-F1 0,7701 |
 | 5.3 U-Net (ResNet34 encoder) | `phase5_unet_resnet34_seed42_w4` | Piksel Dice 0,861 / IoU 0,756 |
-| 5.4 U-Net + sınıflandırıcı | `src/evaluation/two_stage.py` | Tespit edilen binalarda Macro-F1 0,780; katı uçtan uca 0,700 |
+| 5.4 U-Net + sınıflandırıcı | `src/evaluation/two_stage.py` | Yalnızca tespit edilen binalarda Macro-F1 0,780 (kapsama %80,9); uçtan uca 0,700 (kaçırılan binalar no-damage kabul edilerek) |
 
 Bütün eğitimler tam train (134.028 çift / 2.380 görüntü) ve tam validation (25.615 çift / 419 görüntü) ile yapıldı.
 Bütün koşular denetimden geçti (`results/phase5_audit/audit_*.json`): dosyalar, manifest ve split hash'leri,
@@ -36,9 +36,11 @@ patience 5, batch 32, AMP, 128×128 giriş, ImageNet normalizasyonu, aynı train
 edilen fark `num_workers` (2 / 4); `compare.py` bunu kayda geçiriyor, diğer bütün politika alanları birebir aynı.
 
 **Değerlendirme:**
-- Üç ön eğitimli model 0,770–0,779 bandındadır. Ardışık epoch'lar arasındaki validation F1 dalgalanması 0,02–0,03
-  olduğundan aradaki farklar (≤ 0,009) **anlamlı kabul edilmemelidir**; tek seed ile ölçülmüştür. Kurala göre seçilen
-  sınıflandırıcı ResNet34 early fusion'dur ve 5.4 entegrasyonunda bu kullanıldı.
+- Üç ön eğitimli model 0,770–0,779 bandındadır; gözlenen sonuçlar birbirine **yakındır** (fark ≤ 0,009). Her model
+  tek seed ile eğitildiği için **istatistiksel anlamlılık test edilmemiştir**; bu nedenle aradaki farklardan kesin bir
+  üstünlük sonucu çıkarılmamalıdır. Bağlam olarak, ardışık epoch'lar arasındaki validation F1 dalgalanması 0,02–0,03
+  düzeyindedir. Önceden belirlenen seçim kuralına (en yüksek validation Macro-F1) göre seçilen sınıflandırıcı ResNet34
+  early fusion'dur ve 5.4 entegrasyonunda bu kullanıldı.
 - Siamese yapı, early fusion'a göre ek bir kazanç sağlamadı; ViT, ortak politika altında daha yavaş öğrendi
   (best epoch 9) ve daha güçlü overfitting gösterdi (son epoch train F1 0,853 / val F1 0,722).
 - Bütün ön eğitimli modeller en iyi değere erken ulaştı ve sonrasında val loss yükseldi; 3e-4 öğrenme oranı ön
@@ -110,7 +112,7 @@ dönüşümü gerekmez.
 | Uygun binaların kapsanma oranı | **%87,2** | %80,9 |
 | Tespit edilen binalarda hasar Macro-F1 | 0,763 | **0,780** |
 | Aynı binalarda oracle Macro-F1 | 0,791 | 0,790 |
-| Katı uçtan uca Macro-F1 (kaçırılan = no-damage) | **0,710** | 0,700 |
+| Uçtan uca Macro-F1, tüm uygun binalar (kaçırılan binalar no-damage kabul edilerek) | **0,710** | 0,700 |
 
 Threshold ve erosion, validation'da önceden belirlenen ölçütle (lokalizasyon F1) seçildi: önce 5 threshold × 4 erosion,
 seçim ızgara kenarında çıktığı için genişletilmiş ızgara (threshold 0,7–0,9 × erosion 4–8); erosion için en iyi değer
@@ -118,14 +120,17 @@ seçim ızgara kenarında çıktığı için genişletilmiş ızgara (threshold 
 
 **Yorum:** Bina ayırma birleşmeleri %28 azalttı ve tespit edilen binalarda hasar tahmininin oracle'a farkını 0,028'den
 0,009'a indirdi (minor F1 0,572 → 0,611). Bedeli, küçük/soluk binaların silinmesiyle kapsamanın %87'den %81'e düşmesidir;
-kaçırılanlar hasarsız sayıldığında toplam skor 0,700'dür. Lokalizasyon kaynaklı kayıp, sınıflandırma hatasından daha
+U-Net'in kaçırdığı binalar no-damage tahmini almış kabul edilerek tüm uygun binalar (25.615) üzerinden hesaplanan
+uçtan uca Macro-F1 0,700'dür. Bu değer, yalnızca tespit edilen binalarda hesaplanan 0,780 ile ve gerçek kutularla
+hesaplanan sınıflandırma sonucu (oracle 0,779) ile **doğrudan karşılaştırılmamalıdır**; üçü farklı soruları yanıtlar. Lokalizasyon kaynaklı kayıp, sınıflandırma hatasından daha
 büyük bir sınırlamadır. U-Net PRE görüntüsünü kullandığı için yıkılmış binalar da büyük ölçüde bulunur (destroyed
 kapsama %77–83). Örnek: `phase5_audit/two_stage_example_palu-tsunami_00000025*.png`.
 
 ## 5. Sınırlılıklar
 
 1. Tüm seçimler validation üzerinden yapıldı; validation skorları iyimserdir. Test Faz 6'da tek seferlik değerlendirilecek.
-2. Sınıflandırıcılar tek seed ile eğitildi; ≤ 0,01'lik farklar istatistiksel olarak ayırt edilemez.
+2. Sınıflandırıcılar tek seed ile eğitildi; istatistiksel anlamlılık test edilmedi. Modeller arasındaki ≤ 0,01'lik
+   farklar gözlenen değerlerdir ve kesin bir üstünlük olarak yorumlanmamalıdır (çoklu seed gerekir).
 3. Ortak eğitim politikası (lr 3e-4, 128 giriş) Transformer için uygun olmayabilir; ViT sonucu "bu politika altında" geçerlidir.
 4. U-Net yalnızca bina varlığını öğrenir; bitişik binaları ayırmak için kenar/instance bilgisi yoktur. İşlem sonrası
    ayırma kısmi çözüm sağladı; kenar sınıflı (iç/kenar/arka plan) U-Net veya instance segmentasyon gelecek çalışmadır.
