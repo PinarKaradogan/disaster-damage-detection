@@ -50,3 +50,4 @@ runs/
 # the reviewed audit summaries are tracked.
 results/*/
 !results/phase4_audit/
+!results/phase5_audit/

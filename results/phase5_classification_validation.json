@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "evaluation_split": "val",
+  "kind": "models",
+  "selection_rule": "Maximum best validation macro F1; ties retain CLI input order",
+  "selected_run": "results\\phase4_final_resnet34_focal_seed42_w4",
+  "loss": "focal",
+  "sampler": "none",
+  "best_val_macro_f1": 0.7789012622077182,
+  "runs": [
+    "results\\phase4_cnn_focal_seed42_retry_20261018",
+    "results\\phase4_final_resnet34_focal_seed42_w4",
+    "results\\phase5_siamese_resnet34_focal_seed42_w4",
+    "results\\phase5_siamese_vit_small_focal_seed42_w4"
+  ],
+  "batch_sizes": {
+    "simple_cnn": 32,
+    "resnet34_early_fusion": 32,
+    "siamese_resnet34": 32,
+    "siamese_vit_small": 32
+  },
+  "allowed_policy_differences": {
+    "num_workers": {
+      "results\\phase4_cnn_focal_seed42_retry_20261018": 2,
+      "results\\phase4_final_resnet34_focal_seed42_w4": 4,
+      "results\\phase5_siamese_resnet34_focal_seed42_w4": 4,
+      "results\\phase5_siamese_vit_small_focal_seed42_w4": 4
+    }
+  },
+  "test_used": false
+}
