@@ -21,6 +21,7 @@ gerekirse ayrı bir "sapma" bölümüne gerekçesiyle eklenir ve raporda belirti
 | Sınıflandırıcı | `phase5_siamese_resnet34_focal_seed42_w4` | `52307a9356b798aa2213e54e66e3b65d6afd283231d5f8e480c48cb490785e85` | Macro-F1 0,7773 |
 | Sınıflandırıcı | `phase5_siamese_vit_small_focal_seed42_w4` | `1ea45bf6eae0e4313d9ea08b3dc16ecad3bca8498da442ecfa07babba1553d4f` | Macro-F1 0,7701 |
 | Sınıflandırıcı | `phase4_cnn_focal_seed42_retry_20261018` (Pınar) | dosya geldiğinde kaydedilir* | Macro-F1 0,7411 |
+| Genelleme (matthew görmemiş) | `phase6_unseen_matthew_resnet34_focal_seed42_w4` | eğitim + val denetimi sonrası kaydedilir | — |
 | Lokalizasyon | `phase5_unet_resnet34_seed42_w4` | `9d80a6aabe4a9d9b1eb712d1d8567c3bbfa60229e7838074ad1fe27ddade8604` | Piksel Dice 0,8609 |
 
 \* Simple CNN `best.pth` Pınar'ın bilgisayarında. Geldiğinde, test öncesinde şu doğrulama yapılır ve sonucu bu
@@ -49,18 +50,23 @@ Verimlilik: parametre sayısı, kayıtlı eğitim süresi, test çıkarım hız�
 (eğitimdeki seçim eşiği); görüntü bazlı Dice (binalı görüntüler), binasız görüntülerde yanlış alarm oranı;
 çıkarım süresi (sn/görüntü). Boş maske kuralı Faz 5 ile aynıdır.
 
-**İki aşamalı sistem:** Faz 5 ile aynı üç değer ayrı raporlanır, birbirine karıştırılmaz:
-1. Oracle: gerçek bina kutularıyla aynı kırpma yolu (sınıflandırma sonucu);
-2. Yalnızca tespit edilen binalarda hasar Macro-F1 (ve kapsama oranı);
-3. Uçtan uca Macro-F1: tüm uygun binalar, kaçırılan binalar no-damage kabul edilerek.
-Ayrıca lokalizasyon F1 (IoU ≥ 0,5) ve birleşik bileşen sayıları.
+**İki aşamalı sistem:** aşağıdaki değerler **ayrı adlarla** raporlanır, birbirine karıştırılmaz ve tek bir
+"sistem skoru" olarak birleştirilmez. Hepsi 53.806 uygun test binası üzerinden, 4 sınıf için hesaplanır.
 
-**xView2 tarzı skor (literatürle kaba kıyas için):**
-S = 0,3 × F1_lok + 0,7 × F1_hasar, F1_lok = U-Net test global piksel F1 (threshold 0,5),
-F1_hasar = dört sınıf F1'inin harmonik ortalaması. İki sürüm raporlanır:
-- *uçtan uca:* sınıf F1'leri iki aşamalı sistemden, kaçırılan binalar kendi sınıfları için **yanlış negatif**
-  sayılır (hiçbir sınıfa yanlış pozitif yazılmaz);
-- *oracle:* sınıf F1'leri gerçek kutulu sınıflandırmadan (üst sınır).
+| Ad (raporda bu adla) | Hangi binalar | Kaçırılan bina nasıl sayılır | Özet |
+|---|---|---|---|
+| **M1 — Oracle Macro-F1** | tümü, gerçek kutularla kırpılır | kaçırılan yok | sınıflandırıcının tek başına başarısı |
+| **M2 — Tespit edilenlerde Macro-F1** | yalnızca U-Net'in bulduğu binalar | hesaba girmez | + kapsama oranı ayrıca verilir |
+| **M3 — Uçtan uca Macro-F1 (kaçırılan = no-damage)** | tümü | tahmini **no-damage** kabul edilir: gerçek sınıfı no-damage ise doğru, değilse kendi sınıfı için yanlış negatif **ve** no-damage için yanlış pozitif | Faz 5'teki 0,700'ün tanımı |
+| **M4 — xView2-benzeri hasar F1 (kaçırılan = yanlış negatif)** | tümü | yalnızca kendi sınıfı için **yanlış negatif**; hiçbir sınıfa yanlış pozitif yazılmaz | dört sınıf F1'inin **harmonik** ortalaması |
+
+M3 ile M4'ün tek farkı kaçırılan binanın sayılış biçimidir; M3 Macro-F1 (aritmetik ortalama), M4 harmonik
+ortalamadır. Ayrıca lokalizasyon F1 (IoU ≥ 0,5) ve birleşik bileşen sayıları raporlanır.
+
+**xView2-benzeri skor (literatürle kaba kıyas için):**
+S = 0,3 × F1_lok + 0,7 × F1_hasar, F1_lok = U-Net test global piksel F1 (threshold 0,5). İki sürüm:
+- *S_uçtan uca:* F1_hasar = **M4**;
+- *S_oracle:* F1_hasar = M1'deki dört sınıf F1'inin harmonik ortalaması (üst sınır).
 Bu skor resmî xView2 skoru **değildir**: resmî hasar F1 piksel düzeyindedir, bizimki bina düzeyindedir.
 
 ## 5. Afet bazlı analiz kuralları
@@ -76,7 +82,18 @@ Bu skor resmî xView2 skoru **değildir**: resmî hasar F1 piksel düzeyindedir,
 
 - Model: ResNet34 early fusion, Faz 4 ile **aynı politika** (Focal, AdamW 3e-4, batch 32, 30 epoch, patience 5,
   seed 42, 128 giriş, 4 worker), `splits/unseen_disaster/hurricane-matthew/{train,val}_images.txt` ile eğitilir.
-  Model seçimi bu val bölmesinde (matthew içermez) yapılır.
+  Model seçimi bu val bölmesinde (matthew içermez) yapılır. Yeni hiperparametre denemesi yapılmaz.
+- Manifest: `data/processed/patches_unseen_hurricane-matthew/patches.csv`
+  (`python -m src.preprocessing.unseen_manifest --holdout-disaster hurricane-matthew`), SHA-256
+  `270c5cdf19a27b7b9adca8974d2641ddb5602993640231dc1f67d29368018df6`. Doğrulandı: train (123.167 bina, 1.712
+  görüntü) ve val (23.324 bina, 308 görüntü) bölmelerinde **hiç hurricane-matthew satırı yok**; holdout 17.120
+  matthew binası (13.152 train-source + 3.968 Challenge test; ikincisi standart test setindeki matthew sayısıyla aynı).
+  Not: matthew binalarının %52'si minor-damage'dır; matthew çıkarılınca eğitimdeki minor örnek sayısı 12.060'tan
+  7.039'a düşer.
+- Eğitim: `python -m src.train --model resnet34_early_fusion --loss focal --manifest
+  data/processed/patches_unseen_hurricane-matthew/patches.csv --experiment-name
+  phase6_unseen_matthew_resnet34_focal_seed42_w4 --num-workers 4`. Bu modelin `best.pth` SHA-256'sı, **test
+  sonuçlarına bakılmadan önce**, eğitim bitip validation denetimi geçince bölüm 2'ye eklenir.
 - Karşılaştırma: matthew **Challenge test** görüntülerinde (`holdout_challenge_test_images.txt`, 73 görüntü)
   (a) standart model (matthew'i eğitimde görmüş) ve (b) matthew'i hiç görmemiş model. Ek olarak (b) matthew'in
   train-source görüntülerinde (`holdout_train_source_images.txt`) raporlanır. Metrikler bölüm 4–5 ile aynı.
