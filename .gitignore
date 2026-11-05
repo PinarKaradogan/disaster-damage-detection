@@ -53,4 +53,5 @@ results/*/
 !results/phase5_audit/
 # Phase 6 test results: JSON reports are tracked, per-building/per-image CSVs stay local
 !results/phase6_test/
+!results/phase6_audit/
 results/phase6_test/*.csv

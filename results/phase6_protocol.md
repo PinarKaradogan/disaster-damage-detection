@@ -21,7 +21,7 @@ gerekirse ayrı bir "sapma" bölümüne gerekçesiyle eklenir ve raporda belirti
 | Sınıflandırıcı | `phase5_siamese_resnet34_focal_seed42_w4` | `52307a9356b798aa2213e54e66e3b65d6afd283231d5f8e480c48cb490785e85` | Macro-F1 0,7773 |
 | Sınıflandırıcı | `phase5_siamese_vit_small_focal_seed42_w4` | `1ea45bf6eae0e4313d9ea08b3dc16ecad3bca8498da442ecfa07babba1553d4f` | Macro-F1 0,7701 |
 | Sınıflandırıcı | `phase4_cnn_focal_seed42_retry_20261018` (Pınar) | dosya geldiğinde kaydedilir* | Macro-F1 0,7411 |
-| Genelleme (matthew görmemiş) | `phase6_unseen_matthew_resnet34_focal_seed42_w4` | eğitim + val denetimi sonrası kaydedilir | — |
+| Genelleme (matthew görmemiş) | `phase6_unseen_matthew_resnet34_focal_seed42_w4` | `fa3bc0219cc584dbe13d5363eee4940c6475441dd9827cecd9f63c6dc2b4bcbe` | Macro-F1 0,7659 (matthew'siz val) |
 | Lokalizasyon | `phase5_unet_resnet34_seed42_w4` | `9d80a6aabe4a9d9b1eb712d1d8567c3bbfa60229e7838074ad1fe27ddade8604` | Piksel Dice 0,8609 |
 
 \* Simple CNN `best.pth` Pınar'ın bilgisayarında. Geldiğinde, test öncesinde şu doğrulama yapılır ve sonucu bu
@@ -94,6 +94,10 @@ Bu skor resmî xView2 skoru **değildir**: resmî hasar F1 piksel düzeyindedir,
   data/processed/patches_unseen_hurricane-matthew/patches.csv --experiment-name
   phase6_unseen_matthew_resnet34_focal_seed42_w4 --num-workers 4`. Bu modelin `best.pth` SHA-256'sı, **test
   sonuçlarına bakılmadan önce**, eğitim bitip validation denetimi geçince bölüm 2'ye eklenir.
+- **Tamamlandı (test açılmadan önce):** eğitim 16 epoch'ta early stopping ile bitti (epoch 12'de bir kez
+  durdurulup `--resume` ile sürdürüldü; history kesintisiz). En iyi epoch 11, matthew'siz val Macro-F1 0,7659
+  (sınıf F1: no 0,955 / minor 0,476 / major 0,731 / destroyed 0,902). `audit_run` bütün kontrolleri geçti,
+  `best.pth` yeniden değerlendirmesi kayıtlı skorla fark 0,0 (`results/phase6_audit/`). SHA-256 bölüm 2'de.
 - Karşılaştırma: matthew **Challenge test** görüntülerinde (`holdout_challenge_test_images.txt`, 73 görüntü)
   (a) standart model (matthew'i eğitimde görmüş) ve (b) matthew'i hiç görmemiş model. Ek olarak (b) matthew'in
   train-source görüntülerinde (`holdout_train_source_images.txt`) raporlanır. Metrikler bölüm 4–5 ile aynı.
