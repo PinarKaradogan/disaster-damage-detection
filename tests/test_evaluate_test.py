@@ -86,7 +86,7 @@ def test_classifier_test_evaluation_end_to_end(synthetic_manifest, tmp_path):  #
     saved = json.loads((root / "results/phase6_test/classifier_cnn.json").read_text())
     assert saved["test"]["macro_f1"] == report["test"]["macro_f1"]
     rows = (root / "results/phase6_test/classifier_cnn.csv").read_text().splitlines()
-    assert rows[0] == "image_id,uid,disaster,label,pred,p0,p1,p2,p3" and len(rows) == 5
+    assert rows[0] == "image_id,uid,disaster,holdout_source,label,pred,p0,p1,p2,p3" and len(rows) == 5
     assert [row.split(",")[0] for row in rows[1:]] == [f"test_{i}" for i in range(4)]
     with pytest.raises(FileExistsError):
         evaluate_classifier("cnn", project_root=root, num_workers=0, check_git=False, device="cpu")

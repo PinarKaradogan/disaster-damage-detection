@@ -94,12 +94,9 @@ def environment():
 
 
 # ------------------------------------------------------------------ evaluations
-@torch.no_grad()
-def evaluate_classifier(run, *, project_root=ROOT, num_workers=4, check_git=True, device=None):
-    commit, registered = protocol_commit(project_root, check_git=check_git)
-    run_dir = Path(project_root) / "results" / run
-    out = output_path("classifier", run, project_root)
-    sha = verify_checkpoint(run, run_dir / "best.pth", registered)
+def load_classifier(run_dir, *, project_root=ROOT, device=None):
+    """best.pth + config.json of a classifier run (config and manifest consistency checked)."""
+    run_dir = Path(run_dir)
     config = json.loads((run_dir / "config.json").read_text(encoding="utf-8"))
     checkpoint = torch.load(run_dir / "best.pth", map_location="cpu", weights_only=True)
     if json.dumps(checkpoint["config"], sort_keys=True) != json.dumps(config, sort_keys=True):
@@ -114,7 +111,13 @@ def evaluate_classifier(run, *, project_root=ROOT, num_workers=4, check_git=True
                          training_mode=config.get("training_mode", "full"))
     model.load_state_dict(checkpoint["model_state_dict"])
     model.to(device).eval()
-    dataset = DamagePatchDataset(manifest, split="test", project_root=project_root,
+    return model, config, checkpoint, manifest, device
+
+
+@torch.no_grad()
+def predict_split(model, config, manifest, split, device, *, project_root=ROOT, num_workers=4):
+    """Deterministic predictions on one manifest split, in manifest row order."""
+    dataset = DamagePatchDataset(manifest, split=split, project_root=project_root,
                                  transform=deterministic_transform(config["input_size"]))
     loader = DataLoader(dataset, batch_size=config["batch_size"], shuffle=False, num_workers=num_workers)
     amp = config["amp"] and device.type == "cuda"
@@ -129,26 +132,45 @@ def evaluate_classifier(run, *, project_root=ROOT, num_workers=4, check_git=True
         probabilities.extend(probs.tolist())
     if device.type == "cuda":
         torch.cuda.synchronize()
-    seconds = time.perf_counter() - started
+    return dataset.df.reset_index(drop=True), labels, predictions, probabilities, time.perf_counter() - started, amp
+
+
+PREDICTION_COLUMNS = ["image_id", "uid", "disaster", "holdout_source", "label", "pred", "p0", "p1", "p2", "p3"]
+
+
+def write_predictions(path, frame, labels, predictions, probabilities):
+    with Path(path).open("x", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(PREDICTION_COLUMNS)
+        for (_, row), label, pred, probs in zip(frame.iterrows(), labels, predictions, probabilities):
+            holdout = row.get("holdout_source", "")
+            writer.writerow([row["image_id"], row["uid"], row.get("disaster", ""),
+                             "" if not isinstance(holdout, str) else holdout, label, pred,
+                             *[f"{p:.5f}" for p in probs]])
+
+
+def evaluate_classifier(run, *, project_root=ROOT, num_workers=4, check_git=True, device=None):
+    commit, registered = protocol_commit(project_root, check_git=check_git)
+    run_dir = Path(project_root) / "results" / run
+    out = output_path("classifier", run, project_root)
+    sha = verify_checkpoint(run, run_dir / "best.pth", registered)
+    model, config, checkpoint, manifest, device = load_classifier(run_dir, project_root=project_root, device=device)
+    frame, labels, predictions, probabilities, seconds, amp = predict_split(
+        model, config, manifest, "test", device, project_root=project_root, num_workers=num_workers)
     metrics = classification_metrics(labels, predictions)
-    frame = dataset.df.reset_index(drop=True)
     report = dict(
         kind="classifier", run=run, model_name=config["model_name"], evaluation_split="test", test_used=True,
         protocol=PROTOCOL, protocol_commit=commit, best_pth_sha256=sha, best_epoch=checkpoint["epoch"],
-        val_macro_f1=checkpoint["best_val_macro_f1"], test_samples=len(dataset), label_map=LABEL_MAP,
+        val_macro_f1=checkpoint["best_val_macro_f1"], test_samples=len(frame), label_map=LABEL_MAP,
+        manifest=str(manifest), manifest_sha256=config["manifest_sha256"],
         test=metrics, damage_f1_harmonic=harmonic_mean(metrics["class_f1"]),
         parameter_count=sum(p.numel() for p in model.parameters()),
-        inference=dict(seconds=seconds, pairs_per_second=len(dataset) / seconds, batch_size=config["batch_size"],
+        inference=dict(seconds=seconds, pairs_per_second=len(frame) / seconds, batch_size=config["batch_size"],
                        amp=amp, num_workers=num_workers, includes_data_loading=True),
         training_time_seconds=json.loads((run_dir / "metrics.json").read_text(encoding="utf-8"))["training_time_seconds"],
         environment=environment())
     out.parent.mkdir(parents=True, exist_ok=True)
-    with out.with_suffix(".csv").open("x", newline="", encoding="utf-8") as handle:
-        writer = csv.writer(handle)
-        writer.writerow(["image_id", "uid", "disaster", "label", "pred", "p0", "p1", "p2", "p3"])
-        for (_, row), label, pred, probs in zip(frame.iterrows(), labels, predictions, probabilities):
-            writer.writerow([row["image_id"], row["uid"], row.get("disaster", ""), label, pred,
-                             *[f"{p:.5f}" for p in probs]])
+    write_predictions(out.with_suffix(".csv"), frame, labels, predictions, probabilities)
     write_json(out, report)
     return report
 
