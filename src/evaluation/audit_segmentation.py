@@ -31,15 +31,17 @@ REEVAL_TOLERANCE = 1e-4
 
 
 class FullImageDataset(Dataset):
-    def __init__(self, image_ids, *, project_root=ROOT, image_size=1024):
+    def __init__(self, image_ids, *, project_root=ROOT, image_size=1024, source="train"):
         self.image_ids, self.project_root, self.image_size = list(image_ids), project_root, image_size
+        self.source = source
 
     def __len__(self):
         return len(self.image_ids)
 
     def __getitem__(self, index):
         image_id = self.image_ids[index]
-        image, mask = load_pair(image_id, project_root=self.project_root, image_size=self.image_size)
+        image, mask = load_pair(image_id, project_root=self.project_root, image_size=self.image_size,
+                                source=self.source)
         return {"image": normalize(image), "mask": torch.from_numpy(mask.copy()).float().unsqueeze(0),
                 "image_id": image_id}
 
@@ -51,8 +53,9 @@ def config_from_metadata(metadata):
 
 @torch.no_grad()
 def evaluate_full_images(model, image_ids, device, *, project_root=ROOT, image_size=1024, threshold=0.5,
-                         num_workers=4, amp=True):
-    loader = DataLoader(FullImageDataset(image_ids, project_root=project_root, image_size=image_size),
+                         num_workers=4, amp=True, source="train"):
+    loader = DataLoader(FullImageDataset(image_ids, project_root=project_root, image_size=image_size,
+                                         source=source),
                         batch_size=2, shuffle=False, num_workers=num_workers)
     model.eval()
     meter = SegmentationMeter(threshold)

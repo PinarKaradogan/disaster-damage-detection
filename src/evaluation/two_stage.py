@@ -213,9 +213,9 @@ def save_example_figure(path, image_id, pre, post, labels, detections, *, projec
 
 
 # ---------------------------------------------------------------- evaluation helpers
-def gt_instances(image_id, size, *, project_root=ROOT):
+def gt_instances(image_id, size, *, project_root=ROOT, source="train"):
     """Rasterize post-disaster polygons into an instance map (0 = background, i = building i)."""
-    label = json.loads((Path(project_root) / "data/train/labels" / f"{image_id}_post_disaster.json")
+    label = json.loads((Path(project_root) / "data" / source / "labels" / f"{image_id}_post_disaster.json")
                        .read_text(encoding="utf-8"))
     canvas = Image.new("I", size, 0)
     draw = ImageDraw.Draw(canvas)
@@ -270,22 +270,36 @@ def match_buildings(pred_labels, gt_labels, *, iou_threshold=0.5, coverage_thres
 
 def evaluate_val(device, *, project_root=ROOT, threshold=0.5, min_area=MIN_AREA, split_erosion=0, limit=None,
                  **model_paths):
+    image_ids = read_split_ids("val", project_root=project_root)[:limit]
+    return evaluate_images(device, image_ids, split="val", project_root=project_root, threshold=threshold,
+                           min_area=min_area, split_erosion=split_erosion, **model_paths)
+
+
+def evaluate_images(device, image_ids, *, split, project_root=ROOT, threshold=0.5, min_area=MIN_AREA,
+                    split_erosion=0, **model_paths):
+    """Building-level two-stage evaluation on ``image_ids`` of the given patch split.
+
+    split "val" reads data/train + buildings_train.csv; split "test" (Phase 6 one-shot only)
+    reads data/test + buildings_test.csv.
+    """
+    if split not in {"val", "test"}:
+        raise ValueError("split must be val or test")
+    source = "train" if split == "val" else "test"
     unet, classifier, meta = load_models(device, project_root=project_root, **model_paths)
     patches = pd.read_csv(Path(project_root) / "data/processed/patches_full/patches.csv",
                           usecols=["image_id", "uid", "damage", "split"])
-    eligible = patches[patches["split"] == "val"].set_index("uid")["damage"].map(LABEL_MAP).to_dict()
-    boxes_table = pd.read_csv(Path(project_root) / "data/processed/buildings_train.csv",
+    eligible = patches[patches["split"] == split].set_index("uid")["damage"].map(LABEL_MAP).to_dict()
+    boxes_table = pd.read_csv(Path(project_root) / f"data/processed/buildings_{source}.csv",
                               usecols=["uid", "x_min", "y_min", "x_max", "y_max"]).set_index("uid")
-    image_ids = read_split_ids("val", project_root=project_root)[:limit]
     totals = Counter()
     rows = []
     for number, image_id in enumerate(image_ids, start=1):
-        base = Path(project_root) / "data/train/images"
+        base = Path(project_root) / "data" / source / "images"
         pre = Image.open(base / f"{image_id}_pre_disaster.png").convert("RGB")
         post = Image.open(base / f"{image_id}_post_disaster.png").convert("RGB")
         labels, detections = run_two_stage(pre, post, unet, classifier, device, threshold=threshold,
                                            min_area=min_area, split_erosion=split_erosion)
-        gt, buildings = gt_instances(image_id, pre.size, project_root=project_root)
+        gt, buildings = gt_instances(image_id, pre.size, project_root=project_root, source=source)
         match = match_buildings(labels, gt)
         for key in ("tp", "fp", "fn", "merged_components", "buildings_in_merged"):
             totals[key] += match[key]
@@ -300,14 +314,14 @@ def evaluate_val(device, *, project_root=ROOT, threshold=0.5, min_area=MIN_AREA,
                              oracle_pred=int(oracle_pred), detected=component is not None,
                              pipeline_pred=by_component[component] if component is not None else -1))
         if number % 25 == 0:
-            print(f"[two-stage val] {number}/{len(image_ids)} images", flush=True)
+            print(f"[two-stage {split}] {number}/{len(image_ids)} images", flush=True)
     frame = pd.DataFrame(rows)
     detected = frame[frame["detected"]]
     precision = totals["tp"] / (totals["tp"] + totals["fp"]) if totals["tp"] + totals["fp"] else 0.0
     recall = totals["tp"] / (totals["tp"] + totals["fn"]) if totals["tp"] + totals["fn"] else 0.0
     oracle_all = classification_metrics(frame["label"], frame["oracle_pred"])
     report = dict(
-        evaluation_split="val", test_used=False, models=meta, threshold=threshold, min_area=min_area,
+        evaluation_split=split, test_used=split == "test", models=meta, threshold=threshold, min_area=min_area,
         split_erosion=split_erosion,
         images=len(image_ids),
         localization=dict(iou_threshold=0.5, tp=totals["tp"], fp=totals["fp"], fn=totals["fn"],
@@ -327,8 +341,25 @@ def evaluate_val(device, *, project_root=ROOT, threshold=0.5, min_area=MIN_AREA,
             oracle_same_buildings=classification_metrics(detected["label"], detected["oracle_pred"])),
         end_to_end_missed_as_no_damage=classification_metrics(
             frame["label"], frame["pipeline_pred"].where(frame["detected"], 0)),
+        end_to_end_missed_as_false_negative=missed_as_false_negative(
+            frame["label"], frame["pipeline_pred"], frame["detected"]),
+        oracle_damage_f1_harmonic=harmonic_mean(oracle_all["class_f1"]),
     )
     return report, frame
+
+
+def harmonic_mean(values):
+    """xView2-style damage F1: harmonic mean of the four class F1 values (0 if any is 0)."""
+    values = [float(v) for v in values]
+    return 0.0 if any(v <= 0 for v in values) else len(values) / sum(1 / v for v in values)
+
+
+def missed_as_false_negative(labels, predictions, detected):
+    """Class F1 where a missed building is a false negative for its own class only."""
+    from sklearn.metrics import f1_score
+    y_pred = np.where(np.asarray(detected, dtype=bool), np.asarray(predictions), -1)
+    class_f1 = f1_score(np.asarray(labels), y_pred, labels=[0, 1, 2, 3], average=None, zero_division=0).tolist()
+    return dict(class_f1=class_f1, macro_f1=float(np.mean(class_f1)), damage_f1_harmonic=harmonic_mean(class_f1))
 
 
 def sweep_val(device, *, thresholds, erosions, project_root=ROOT, min_area=MIN_AREA, limit=None,
