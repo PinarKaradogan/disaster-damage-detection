@@ -12,7 +12,8 @@ Buildings are classified into four damage levels: no damage, minor damage, major
 | `notebooks/`         | Exploration and experiment notebooks                 |
 | `src/preprocessing/` | Patch extraction, data splits, Dataset classes       |
 | `src/models/`        | Model definitions                                    |
-| `src/evaluation/`    | Metrics, Grad-CAM                                    |
+| `src/training/`      | Classifier and U-Net training engines, losses, comparison |
+| `src/evaluation/`    | Run audits, segmentation metrics, two-stage pipeline |
 | `results/`           | Figures and tables (model weights are not committed) |
 
 ## Setup
@@ -40,6 +41,28 @@ See [epoch-boundary resume training](docs/resume-training.md) for `--resume`,
 `--session-epochs`, checkpoint recovery, and reproducibility limits.
 
 For interrupted checkpoints, see [validation-only evaluation](docs/validation-evaluation.md).
+
+## Phase 5: advanced models and building localization
+
+Results and design decisions: [results/phase5_report.md](results/phase5_report.md). All commands use train/validation
+only; the test split is reserved for Phase 6.
+
+```bash
+# Siamese damage classifiers (same training engine and policy as Phase 4)
+python -m src.train --model siamese_resnet34 --loss focal --experiment-name <name> --num-workers 4
+python -m src.train --model siamese_vit_small --loss focal --experiment-name <name> --num-workers 4
+
+# U-Net building segmentation on raw 1024x1024 PRE images (data/train/images + targets)
+python -m src.train_segmentation --experiment-name <name>          # add --resume to continue
+
+# Audits (read-only; re-evaluate best.pth on validation)
+python -m src.evaluation.audit_run --experiment <classifier run> --output results/phase5_audit/audit_<name>.json
+python -m src.evaluation.audit_segmentation --experiment <unet run> --output results/phase5_audit/audit_<name>.json
+
+# Two-stage system: U-Net localization -> damage classifier
+python -m src.evaluation.two_stage predict --image-id <val image id> --threshold 0.9 --split-erosion 4 --output <figure.png>
+python -m src.evaluation.two_stage evaluate-val --threshold 0.9 --split-erosion 4 --output <report.json>
+```
 
 ## Team
 

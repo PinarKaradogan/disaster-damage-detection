@@ -8,6 +8,7 @@ import csv
 import json
 from pathlib import Path
 
+from src.models import MODEL_NAMES, PRETRAINED_MODELS
 from src.training.artifacts import write_json
 
 POLICY_KEYS = (
@@ -39,9 +40,10 @@ def compare_runs(run_dirs, *, kind, output_path):
         if config["evaluation_split"] != "val" or metrics["evaluation_split"] != "val":
             raise ValueError("Only VALIDATION results are allowed")
         runs.append((run_dir, config, metrics))
-    expected = 3 if kind == "imbalance" else 2
-    if len(runs) != expected:
-        raise ValueError(f"Expected {expected} runs")
+    if kind == "imbalance" and len(runs) != 3:
+        raise ValueError("Expected 3 runs")
+    if kind == "models" and len(runs) < 2:
+        raise ValueError("Expected at least 2 runs")
     baseline = runs[0][1]
     for _, config, _ in runs[1:]:
         differences = [key for key in POLICY_KEYS if config[key] != baseline[key]]
@@ -55,13 +57,14 @@ def compare_runs(run_dirs, *, kind, output_path):
         if {(config["loss"], config["sampler"]) for _, config, _ in runs} != STRATEGIES:
             raise ValueError("Expected weighted CE, focal, and sampler + CE")
     else:
-        if {config["model_name"] for _, config, _ in runs} != {"simple_cnn", "resnet34_early_fusion"}:
-            raise ValueError("Expected Simple CNN and ResNet34")
+        names = [config["model_name"] for _, config, _ in runs]
+        if len(set(names)) != len(names) or not set(names) <= set(MODEL_NAMES):
+            raise ValueError("Model comparison needs distinct known classifier models")
         for _, config, _ in runs:
             if (config["loss"], config["sampler"]) != (baseline["loss"], baseline["sampler"]):
                 raise ValueError("Final models must use the same imbalance strategy")
-            if config["model_name"] == "resnet34_early_fusion" and not config["pretrained"]:
-                raise ValueError("Final ResNet run must use pretrained=True")
+            if config["model_name"] in PRETRAINED_MODELS and not config["pretrained"]:
+                raise ValueError(f"{config['model_name']} run must use pretrained=True")
     output_path = Path(output_path)
     if output_path.exists() or output_path.with_suffix(".json").exists():
         raise FileExistsError("Comparison output already exists")

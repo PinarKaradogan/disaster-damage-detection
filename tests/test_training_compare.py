@@ -99,3 +99,32 @@ def test_other_policy_differences_still_rejected_with_worker_difference(tmp_path
     write_json(resnet / "config.json", config)
     with pytest.raises(ValueError, match=key):
         compare_runs([cnn, resnet], kind="models", output_path=tmp_path / "bad.csv")
+
+
+def test_model_comparison_accepts_phase5_classifiers(tmp_path):
+    runs = [make_run(tmp_path, "cnn", loss="focal", num_workers=2),
+            make_run(tmp_path, "resnet", model="resnet34_early_fusion", loss="focal", score=.7, num_workers=4),
+            make_run(tmp_path, "siamese", model="siamese_resnet34", loss="focal", score=.65, num_workers=4),
+            make_run(tmp_path, "vit", model="siamese_vit_small", loss="focal", score=.6, num_workers=4)]
+    output = tmp_path / "val.csv"
+    result = compare_runs(runs, kind="models", output_path=output)
+    assert result["selected_run"].endswith("resnet") and len(output.read_text().splitlines()) == 5
+    assert set(result["batch_sizes"]) == {"simple_cnn", "resnet34_early_fusion", "siamese_resnet34", "siamese_vit_small"}
+
+
+@pytest.mark.parametrize("problem", ["duplicate", "unknown", "not_pretrained", "single"])
+def test_model_comparison_rejects_invalid_sets(tmp_path, problem):
+    runs = [make_run(tmp_path, "cnn", loss="focal"),
+            make_run(tmp_path, "vit", model="siamese_vit_small", loss="focal")]
+    if problem == "duplicate":
+        runs.append(make_run(tmp_path, "vit2", model="siamese_vit_small", loss="focal"))
+    elif problem == "unknown":
+        runs.append(make_run(tmp_path, "other", model="unet_resnet34", loss="focal"))
+    elif problem == "not_pretrained":
+        config = json.loads((runs[1] / "config.json").read_text())
+        config["pretrained"] = False
+        write_json(runs[1] / "config.json", config)
+    else:
+        runs = runs[:1]
+    with pytest.raises(ValueError):
+        compare_runs(runs, kind="models", output_path=tmp_path / "bad.csv")
