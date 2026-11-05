@@ -46,9 +46,9 @@ def source_paths(image_id, *, project_root=ROOT):
 def load_pair(image_id, *, project_root=ROOT, image_size=1024):
     image_path, mask_path = source_paths(image_id, project_root=project_root)
     with Image.open(image_path) as handle:
-        image = np.asarray(handle.convert("RGB"), dtype=np.uint8)
+        image = np.array(handle.convert("RGB"), dtype=np.uint8)
     with Image.open(mask_path) as handle:
-        mask = np.asarray(handle, dtype=np.uint8)
+        mask = np.array(handle, dtype=np.uint8)
     if image.shape != (image_size, image_size, 3) or mask.shape != (image_size, image_size):
         raise ValueError(f"{image_id}: expected {image_size}x{image_size} image and mask, "
                          f"got {image.shape} / {mask.shape}")

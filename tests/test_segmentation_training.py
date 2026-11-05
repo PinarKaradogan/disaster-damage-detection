@@ -128,3 +128,18 @@ def test_experiment_artifacts_resume_and_overwrite_protection(tmp_path):
         run(project, tmp_path, "full")
     with pytest.raises(ValueError, match="completed"):
         run(project, tmp_path, "full", resume=True)
+
+
+def test_audit_segmentation_passes_on_completed_run(tmp_path):
+    from src.evaluation.audit_segmentation import audit_segmentation
+    project = make_project(tmp_path / "project", {"train": ["a_00000001", "a_00000002"], "val": ["b_00000003"]})
+    config = SegmentationConfig(image_size=64, tile_size=32, tiles_per_image=2, batch_size=2, num_workers=0,
+                                epochs=2, amp=False, early_stopping_patience=10)
+    run_segmentation_experiment(config, experiment_name="done", project_root=project, device="cpu", pretrained=False)
+    report = audit_segmentation("done", output=tmp_path / "audit.json", project_root=project, num_workers=0)
+    assert report["all_passed"] is True and report["test_used"] is False
+    assert report["reeval_minus_recorded"] == pytest.approx(0.0, abs=1e-6)
+    assert report["full_image_val"]["images"] == 1
+    assert (tmp_path / "audit_per_image_full.csv").read_text().startswith("image_id,gt_pixels,tp,fp,fn,dice")
+    with pytest.raises(FileExistsError):
+        audit_segmentation("done", output=tmp_path / "audit.json", project_root=project, num_workers=0)

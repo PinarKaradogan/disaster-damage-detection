@@ -1,0 +1,77 @@
+{
+  "experiment": "phase5_unet_resnet34_seed42_w4",
+  "test_used": false,
+  "training_performed": false,
+  "checks": {
+    "files_present": {
+      "best.pth": true,
+      "last.pth": true,
+      "config.json": true,
+      "metrics.json": true,
+      "history.csv": true,
+      "status.json": true
+    },
+    "tensorboard_events": 1,
+    "status_completed": true,
+    "not_smoke": true,
+    "task_and_split": true,
+    "split_files_unchanged": true,
+    "history_contiguous": true,
+    "history_rows_equal_epochs_completed": true,
+    "history_best_matches_metrics": true,
+    "stopping_consistent": true,
+    "best_ckpt_epoch_matches": true,
+    "best_ckpt_config_equals_config_json": true,
+    "last_ckpt_final_and_finished": true,
+    "last_embedded_best_equals_best_pth": true,
+    "val_images_match_config": true,
+    "reeval_tile_dice_matches_metrics_1e-4": true
+  },
+  "all_passed": true,
+  "recorded": {
+    "best_epoch": 30,
+    "best_val_dice": 0.8609419242939884
+  },
+  "reevaluated_val_tiles": {
+    "loss": 0.3082749231902967,
+    "dice": 0.8609419242939884,
+    "iou": 0.7558367239180136,
+    "precision": 0.8749104491619408,
+    "recall": 0.8474124236187268,
+    "pixel_accuracy": 0.9822129087971617,
+    "per_image_dice_nonempty": 0.7982567684971192,
+    "empty_image_false_positive_rate": 0.10526315789473684,
+    "images": 419,
+    "images_with_buildings": 343,
+    "images_without_buildings": 76,
+    "pixel_counts": {
+      "tp": 24191707,
+      "fp": 3458788,
+      "fn": 4356030,
+      "tn": 407346819
+    },
+    "threshold": 0.5
+  },
+  "reeval_minus_recorded": 0.0,
+  "full_image_val": {
+    "dice": 0.8637266167317501,
+    "iou": 0.760139795097042,
+    "precision": 0.8761253103130077,
+    "recall": 0.8516739522996166,
+    "pixel_accuracy": 0.9825379251011231,
+    "per_image_dice_nonempty": 0.802231311128757,
+    "empty_image_false_positive_rate": 0.07894736842105263,
+    "images": 419,
+    "images_with_buildings": 343,
+    "images_without_buildings": 76,
+    "pixel_counts": {
+      "tp": 24313364,
+      "fp": 3437648,
+      "fn": 4234373,
+      "tn": 407367959
+    },
+    "threshold": 0.5
+  },
+  "full_image_note": "Same best.pth applied to whole 1024x1024 val images (no tiling); reported separately from the selection metric.",
+  "per_image_csv": "audit_phase5_unet_resnet34_seed42_w4_per_image_full.csv"
+}
