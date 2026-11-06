@@ -1,0 +1,85 @@
+{
+  "kind": "classifier",
+  "run": "phase5_siamese_resnet34_focal_seed42_w4",
+  "model_name": "siamese_resnet34",
+  "evaluation_split": "test",
+  "test_used": true,
+  "protocol": "results/phase6_protocol.md",
+  "protocol_commit": "5396622801f50c0a5b2433a9ab9bda123490a63c",
+  "best_pth_sha256": "52307a9356b798aa2213e54e66e3b65d6afd283231d5f8e480c48cb490785e85",
+  "best_epoch": 4,
+  "val_macro_f1": 0.7772952479251111,
+  "test_samples": 53806,
+  "label_map": {
+    "no-damage": 0,
+    "minor-damage": 1,
+    "major-damage": 2,
+    "destroyed": 3
+  },
+  "manifest": "C:\\Users\\bhrto\\disaster-damage-detection\\data\\processed\\patches_full\\patches.csv",
+  "manifest_sha256": "383da7b841c0bd8b11b9cf807873b029291ad23b3c3f48135d9b7dde1ffe11ec",
+  "test": {
+    "macro_f1": 0.7597972475609533,
+    "class_f1": [
+      0.954830689791186,
+      0.5888252148997135,
+      0.6688311688311688,
+      0.8267019167217449
+    ],
+    "class_precision": [
+      0.9448807721423165,
+      0.6882500697739324,
+      0.6435952895938476,
+      0.825065963060686
+    ],
+    "class_recall": [
+      0.9649923896499238,
+      0.5145003129563948,
+      0.6961268520925397,
+      0.8283443708609272
+    ],
+    "confusion_matrix": [
+      [
+        39942,
+        717,
+        470,
+        262
+      ],
+      [
+        1464,
+        2466,
+        732,
+        131
+      ],
+      [
+        594,
+        305,
+        2678,
+        270
+      ],
+      [
+        272,
+        95,
+        281,
+        3127
+      ]
+    ],
+    "accuracy": 0.8960524848529904
+  },
+  "damage_f1_harmonic": 0.7338945374118586,
+  "parameter_count": 21679172,
+  "inference": {
+    "seconds": 143.21927689993754,
+    "pairs_per_second": 375.68964991767433,
+    "batch_size": 32,
+    "amp": true,
+    "num_workers": 4,
+    "includes_data_loading": true
+  },
+  "training_time_seconds": 3700.642128699925,
+  "environment": {
+    "python": "3.13.16",
+    "torch": "2.14.1+cu132",
+    "gpu": "NVIDIA GeForce RTX 4050 Laptop GPU"
+  }
+}

@@ -36,15 +36,18 @@ def read_split_ids(split, *, project_root=ROOT, split_dir="splits/standard"):
     return ids
 
 
-def source_paths(image_id, *, project_root=ROOT):
-    # Train and val images both come from the Challenge train set folder.
-    base = Path(project_root) / "data" / "train"
+def source_paths(image_id, *, project_root=ROOT, source="train"):
+    # Train and val images both come from the Challenge train set folder ("train");
+    # only the Phase 6 one-shot test evaluation reads "test".
+    if source not in {"train", "test"}:
+        raise ValueError("source must be train or test")
+    base = Path(project_root) / "data" / source
     return (base / "images" / f"{image_id}_pre_disaster.png",
             base / "targets" / f"{image_id}_pre_disaster_target.png")
 
 
-def load_pair(image_id, *, project_root=ROOT, image_size=1024):
-    image_path, mask_path = source_paths(image_id, project_root=project_root)
+def load_pair(image_id, *, project_root=ROOT, image_size=1024, source="train"):
+    image_path, mask_path = source_paths(image_id, project_root=project_root, source=source)
     with Image.open(image_path) as handle:
         image = np.array(handle.convert("RGB"), dtype=np.uint8)
     with Image.open(mask_path) as handle:

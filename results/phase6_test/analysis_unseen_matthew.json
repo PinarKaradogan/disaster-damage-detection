@@ -1,0 +1,99 @@
+{
+  "min_support": 30,
+  "overall": {
+    "buildings": 17120,
+    "support": {
+      "no-damage": 3131,
+      "minor-damage": 8885,
+      "major-damage": 2280,
+      "destroyed": 2824
+    },
+    "accuracy": 0.2893691588785047,
+    "class_f1": {
+      "no-damage": 0.35298526105420935,
+      "minor-damage": 0.07669491525423729,
+      "major-damage": 0.08456659619450317,
+      "destroyed": 0.5532773109243697
+    },
+    "present_class_macro_f1": 0.26688102085682985,
+    "classes_included": 4
+  },
+  "by_disaster": {
+    "hurricane-matthew": {
+      "buildings": 17120,
+      "support": {
+        "no-damage": 3131,
+        "minor-damage": 8885,
+        "major-damage": 2280,
+        "destroyed": 2824
+      },
+      "accuracy": 0.2893691588785047,
+      "class_f1": {
+        "no-damage": 0.35298526105420935,
+        "minor-damage": 0.07669491525423729,
+        "major-damage": 0.08456659619450317,
+        "destroyed": 0.5532773109243697
+      },
+      "present_class_macro_f1": 0.26688102085682985,
+      "classes_included": 4
+    }
+  },
+  "by_type": {
+    "wind": {
+      "buildings": 17120,
+      "support": {
+        "no-damage": 3131,
+        "minor-damage": 8885,
+        "major-damage": 2280,
+        "destroyed": 2824
+      },
+      "accuracy": 0.2893691588785047,
+      "class_f1": {
+        "no-damage": 0.35298526105420935,
+        "minor-damage": 0.07669491525423729,
+        "major-damage": 0.08456659619450317,
+        "destroyed": 0.5532773109243697
+      },
+      "present_class_macro_f1": 0.26688102085682985,
+      "classes_included": 4
+    }
+  },
+  "by_holdout_source": {
+    "challenge_test": {
+      "buildings": 3968,
+      "support": {
+        "no-damage": 616,
+        "minor-damage": 2337,
+        "major-damage": 336,
+        "destroyed": 679
+      },
+      "accuracy": 0.27973790322580644,
+      "class_f1": {
+        "no-damage": 0.32090395480225986,
+        "minor-damage": 0.060181368507831824,
+        "major-damage": 0.11180124223602485,
+        "destroyed": 0.5944855413584398
+      },
+      "present_class_macro_f1": 0.2718430267261391,
+      "classes_included": 4
+    },
+    "train_source": {
+      "buildings": 13152,
+      "support": {
+        "no-damage": 2515,
+        "minor-damage": 6548,
+        "major-damage": 1944,
+        "destroyed": 2145
+      },
+      "accuracy": 0.2922749391727494,
+      "class_f1": {
+        "no-damage": 0.3620910840282232,
+        "minor-damage": 0.08240661534074707,
+        "major-damage": 0.07898089171974522,
+        "destroyed": 0.5395473896482187
+      },
+      "present_class_macro_f1": 0.26575649518423355,
+      "classes_included": 4
+    }
+  }
+}

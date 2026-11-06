@@ -1,0 +1,85 @@
+{
+  "kind": "classifier",
+  "run": "phase5_siamese_vit_small_focal_seed42_w4",
+  "model_name": "siamese_vit_small",
+  "evaluation_split": "test",
+  "test_used": true,
+  "protocol": "results/phase6_protocol.md",
+  "protocol_commit": "5396622801f50c0a5b2433a9ab9bda123490a63c",
+  "best_pth_sha256": "1ea45bf6eae0e4313d9ea08b3dc16ecad3bca8498da442ecfa07babba1553d4f",
+  "best_epoch": 9,
+  "val_macro_f1": 0.7701127143767456,
+  "test_samples": 53806,
+  "label_map": {
+    "no-damage": 0,
+    "minor-damage": 1,
+    "major-damage": 2,
+    "destroyed": 3
+  },
+  "manifest": "C:\\Users\\bhrto\\disaster-damage-detection\\data\\processed\\patches_full\\patches.csv",
+  "manifest_sha256": "383da7b841c0bd8b11b9cf807873b029291ad23b3c3f48135d9b7dde1ffe11ec",
+  "test": {
+    "macro_f1": 0.7563571686319559,
+    "class_f1": [
+      0.950581256279003,
+      0.5954489407017151,
+      0.6822089085699401,
+      0.7971895689771652
+    ],
+    "class_precision": [
+      0.9412377726723669,
+      0.6434108527131783,
+      0.6836335160532498,
+      0.8135686707115278
+    ],
+    "class_recall": [
+      0.960112101664613,
+      0.5541414562904236,
+      0.680790226150247,
+      0.7814569536423841
+    ],
+    "confusion_matrix": [
+      [
+        39740,
+        898,
+        447,
+        306
+      ],
+      [
+        1529,
+        2656,
+        457,
+        151
+      ],
+      [
+        562,
+        447,
+        2619,
+        219
+      ],
+      [
+        390,
+        127,
+        308,
+        2950
+      ]
+    ],
+    "accuracy": 0.8914433334572353
+  },
+  "damage_f1_harmonic": 0.7337259843078597,
+  "parameter_count": 21911172,
+  "inference": {
+    "seconds": 142.29507329990156,
+    "pairs_per_second": 378.1297465345009,
+    "batch_size": 32,
+    "amp": true,
+    "num_workers": 4,
+    "includes_data_loading": true
+  },
+  "training_time_seconds": 5987.387473399984,
+  "environment": {
+    "python": "3.13.16",
+    "torch": "2.14.1+cu132",
+    "gpu": "NVIDIA GeForce RTX 4050 Laptop GPU"
+  }
+}

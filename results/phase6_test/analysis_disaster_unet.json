@@ -1,0 +1,108 @@
+{
+  "overall": {
+    "images": 933,
+    "images_with_buildings": 752,
+    "dice": 0.8608699991609744,
+    "iou": 0.7557258596708901
+  },
+  "by_disaster": {
+    "guatemala-volcano": {
+      "images": 5,
+      "images_with_buildings": 5,
+      "dice": 0.4063490424818046,
+      "iou": 0.2549799506377576
+    },
+    "hurricane-florence": {
+      "images": 108,
+      "images_with_buildings": 103,
+      "dice": 0.8969747444505572,
+      "iou": 0.8131951103909704
+    },
+    "hurricane-harvey": {
+      "images": 108,
+      "images_with_buildings": 99,
+      "dice": 0.8822692793180795,
+      "iou": 0.789339742563229
+    },
+    "hurricane-matthew": {
+      "images": 73,
+      "images_with_buildings": 67,
+      "dice": 0.7617805047478787,
+      "iou": 0.6152225091503409
+    },
+    "hurricane-michael": {
+      "images": 98,
+      "images_with_buildings": 93,
+      "dice": 0.856928531824368,
+      "iou": 0.7496718758907047
+    },
+    "mexico-earthquake": {
+      "images": 38,
+      "images_with_buildings": 38,
+      "dice": 0.8373385848873839,
+      "iou": 0.720191256029838
+    },
+    "midwest-flooding": {
+      "images": 80,
+      "images_with_buildings": 74,
+      "dice": 0.8580400850450022,
+      "iou": 0.751374959670818
+    },
+    "palu-tsunami": {
+      "images": 42,
+      "images_with_buildings": 42,
+      "dice": 0.889713489056934,
+      "iou": 0.801336844398137
+    },
+    "santa-rosa-wildfire": {
+      "images": 74,
+      "images_with_buildings": 72,
+      "dice": 0.8761560589624885,
+      "iou": 0.7796065156107331
+    },
+    "socal-fire": {
+      "images": 307,
+      "images_with_buildings": 159,
+      "dice": 0.8272520766705033,
+      "iou": 0.7053963261959044
+    }
+  },
+  "by_type": {
+    "earthquake": {
+      "images": 38,
+      "images_with_buildings": 38,
+      "dice": 0.8373385848873839,
+      "iou": 0.720191256029838
+    },
+    "fire": {
+      "images": 381,
+      "images_with_buildings": 231,
+      "dice": 0.8522242528005003,
+      "iou": 0.7425006625901215
+    },
+    "flooding": {
+      "images": 296,
+      "images_with_buildings": 276,
+      "dice": 0.8806633299022469,
+      "iou": 0.7867725175351733
+    },
+    "tsunami": {
+      "images": 42,
+      "images_with_buildings": 42,
+      "dice": 0.889713489056934,
+      "iou": 0.801336844398137
+    },
+    "volcano": {
+      "images": 5,
+      "images_with_buildings": 5,
+      "dice": 0.4063490424818046,
+      "iou": 0.2549799506377576
+    },
+    "wind": {
+      "images": 171,
+      "images_with_buildings": 160,
+      "dice": 0.8400412147691767,
+      "iou": 0.7241991917859518
+    }
+  }
+}

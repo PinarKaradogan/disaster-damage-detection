@@ -1,0 +1,228 @@
+{
+  "evaluation_split": "test",
+  "test_used": true,
+  "models": {
+    "unet": "results/phase5_unet_resnet34_seed42_w4/best.pth",
+    "unet_epoch": 30,
+    "classifier": "results/phase4_final_resnet34_focal_seed42_w4/best.pth",
+    "classifier_model": "resnet34_early_fusion",
+    "classifier_epoch": 4,
+    "classifier_input_size": 128
+  },
+  "threshold": 0.9,
+  "min_area": 10,
+  "split_erosion": 4,
+  "images": 933,
+  "localization": {
+    "iou_threshold": 0.5,
+    "tp": 25504,
+    "fp": 14830,
+    "fn": 29354,
+    "precision": 0.6323201269400506,
+    "recall": 0.46490940245725326,
+    "f1": 0.5358433481805194,
+    "components": 40334,
+    "merged_components": 4955,
+    "buildings_in_merged_components": 19236,
+    "note": "all GT polygons incl. un-classified count as buildings for localization"
+  },
+  "eligible_buildings": 53806,
+  "detection_rate": 0.8079024644091737,
+  "detection_rate_by_class": {
+    "no-damage": 0.8195984634340798,
+    "minor-damage": 0.755059461715001,
+    "major-damage": 0.8273979724460618,
+    "destroyed": 0.726887417218543
+  },
+  "oracle_gt_boxes": {
+    "macro_f1": 0.7363497286732827,
+    "class_f1": [
+      0.9508349793499731,
+      0.5595776772247361,
+      0.6487411390857981,
+      0.7862451190326237
+    ],
+    "accuracy": 0.8867970114857079
+  },
+  "end_to_end_detected": {
+    "buildings": 43470,
+    "pipeline": {
+      "macro_f1": 0.7328886447145911,
+      "class_f1": [
+        0.9517379854210013,
+        0.5351204614862572,
+        0.6694610778443114,
+        0.7752350541067944
+      ],
+      "class_precision": [
+        0.9396925729061917,
+        0.6931868131868132,
+        0.6394052044609665,
+        0.7552713446249568
+      ],
+      "class_recall": [
+        0.9640962150689777,
+        0.43575573362807407,
+        0.7024819352811813,
+        0.7962827988338192
+      ],
+      "confusion_matrix": [
+        [
+          32706,
+          445,
+          468,
+          305
+        ],
+        [
+          1281,
+          1577,
+          566,
+          195
+        ],
+        [
+          530,
+          209,
+          2236,
+          208
+        ],
+        [
+          288,
+          44,
+          227,
+          2185
+        ]
+      ],
+      "accuracy": 0.8903611686220382
+    },
+    "oracle_same_buildings": {
+      "macro_f1": 0.7468047358430224,
+      "class_f1": [
+        0.9561015489277216,
+        0.5553116027698024,
+        0.6635238656452563,
+        0.8122819260293092
+      ],
+      "class_precision": [
+        0.9471005061460593,
+        0.7141615986099045,
+        0.6246879334257975,
+        0.7791164658634538
+      ],
+      "class_recall": [
+        0.9652753213064497,
+        0.45426913512019895,
+        0.7075086396481307,
+        0.8483965014577259
+      ],
+      "confusion_matrix": [
+        [
+          32746,
+          412,
+          482,
+          284
+        ],
+        [
+          1175,
+          1644,
+          656,
+          144
+        ],
+        [
+          497,
+          202,
+          2252,
+          232
+        ],
+        [
+          157,
+          44,
+          215,
+          2328
+        ]
+      ],
+      "accuracy": 0.8964803312629399
+    }
+  },
+  "end_to_end_missed_as_no_damage": {
+    "macro_f1": 0.659762485697629,
+    "class_f1": [
+      0.9285119955623353,
+      0.44623655913978494,
+      0.6089324618736384,
+      0.6553689262147571
+    ],
+    "class_precision": [
+      0.8899448395028909,
+      0.6931868131868132,
+      0.6394052044609665,
+      0.7552713446249568
+    ],
+    "class_recall": [
+      0.9705733130390665,
+      0.329021489672439,
+      0.581232128931635,
+      0.5788079470198676
+    ],
+    "confusion_matrix": [
+      [
+        40173,
+        445,
+        468,
+        305
+      ],
+      [
+        2455,
+        1577,
+        566,
+        195
+      ],
+      [
+        1194,
+        209,
+        2236,
+        208
+      ],
+      [
+        1319,
+        44,
+        227,
+        2185
+      ]
+    ],
+    "accuracy": 0.8581013269895551
+  },
+  "end_to_end_missed_as_false_negative": {
+    "class_f1": [
+      0.8584702609060844,
+      0.44623655913978494,
+      0.6089324618736384,
+      0.6553689262147571
+    ],
+    "macro_f1": 0.6422520520335662,
+    "damage_f1_harmonic": 0.6084665434187705
+  },
+  "oracle_damage_f1_harmonic": 0.7077035575080182,
+  "kind": "two_stage",
+  "protocol": "results/phase6_protocol.md",
+  "protocol_commit": "5396622801f50c0a5b2433a9ab9bda123490a63c",
+  "best_pth_sha256": {
+    "phase5_unet_resnet34_seed42_w4": "9d80a6aabe4a9d9b1eb712d1d8567c3bbfa60229e7838074ad1fe27ddade8604",
+    "phase4_final_resnet34_focal_seed42_w4": "16f10bd6d85048ccc950001248a95486388ba5d0fc4f512abb8e384443ceeb11"
+  },
+  "xview2_style": {
+    "f1_localization_pixel": 0.8608699991609744,
+    "end_to_end": 0.6841875801414317,
+    "oracle": 0.7536534900039049,
+    "note": "xView2-STYLE, building-level damage F1; not the official pixel-level xView2 score"
+  },
+  "inference": {
+    "seconds": 576.4621966001578,
+    "seconds_per_image": 0.6178587316186043,
+    "includes_oracle_pass": true
+  },
+  "environment": {
+    "python": "3.13.16",
+    "torch": "2.14.1+cu132",
+    "gpu": "NVIDIA GeForce RTX 4050 Laptop GPU"
+  }
+}

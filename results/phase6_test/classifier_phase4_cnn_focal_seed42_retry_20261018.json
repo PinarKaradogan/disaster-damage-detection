@@ -1,0 +1,85 @@
+{
+  "kind": "classifier",
+  "run": "phase4_cnn_focal_seed42_retry_20261018",
+  "model_name": "simple_cnn",
+  "evaluation_split": "test",
+  "test_used": true,
+  "protocol": "results/phase6_protocol.md",
+  "protocol_commit": "5396622801f50c0a5b2433a9ab9bda123490a63c",
+  "best_pth_sha256": "157782f4448a10c39f1310b88a5c02d3f9c7863e4091819e73a45fb781036a81",
+  "best_epoch": 14,
+  "val_macro_f1": 0.7410596567571364,
+  "test_samples": 53806,
+  "label_map": {
+    "no-damage": 0,
+    "minor-damage": 1,
+    "major-damage": 2,
+    "destroyed": 3
+  },
+  "manifest": "C:\\Users\\bhrto\\disaster-damage-detection\\data\\processed\\patches_full\\patches.csv",
+  "manifest_sha256": "383da7b841c0bd8b11b9cf807873b029291ad23b3c3f48135d9b7dde1ffe11ec",
+  "test": {
+    "macro_f1": 0.701125408093739,
+    "class_f1": [
+      0.9340530618652562,
+      0.5175075511802215,
+      0.6004938271604938,
+      0.752447192168985
+    ],
+    "class_precision": [
+      0.9337486117147135,
+      0.5578871201157742,
+      0.5718316482482954,
+      0.7322637252444222
+    ],
+    "class_recall": [
+      0.9343577106134183,
+      0.4825787606926768,
+      0.6321809201975566,
+      0.7737748344370861
+    ],
+    "confusion_matrix": [
+      [
+        38674,
+        1373,
+        764,
+        580
+      ],
+      [
+        1546,
+        2313,
+        759,
+        175
+      ],
+      [
+        779,
+        323,
+        2432,
+        313
+      ],
+      [
+        419,
+        137,
+        298,
+        2921
+      ]
+    ],
+    "accuracy": 0.8612422406423076
+  },
+  "damage_f1_harmonic": 0.6669740400608516,
+  "parameter_count": 94852,
+  "inference": {
+    "seconds": 139.38105119997635,
+    "pairs_per_second": 386.0352575674155,
+    "batch_size": 32,
+    "amp": true,
+    "num_workers": 4,
+    "includes_data_loading": true
+  },
+  "training_time_seconds": 11068.033637099998,
+  "environment": {
+    "python": "3.13.16",
+    "torch": "2.14.1+cu132",
+    "gpu": "NVIDIA GeForce RTX 4050 Laptop GPU"
+  }
+}
