@@ -1,0 +1,41 @@
+{
+  "kind": "segmentation",
+  "run": "phase5_unet_resnet34_seed42_w4",
+  "evaluation_split": "test",
+  "test_used": true,
+  "protocol": "results/phase6_protocol.md",
+  "protocol_commit": "5396622801f50c0a5b2433a9ab9bda123490a63c",
+  "best_pth_sha256": "9d80a6aabe4a9d9b1eb712d1d8567c3bbfa60229e7838074ad1fe27ddade8604",
+  "best_epoch": 30,
+  "val_dice": 0.8609419242939884,
+  "test_images": 933,
+  "test": {
+    "dice": 0.8608699991609744,
+    "iou": 0.7557258596708901,
+    "precision": 0.8673609643547149,
+    "recall": 0.8544754636430673,
+    "pixel_accuracy": 0.9836366843563951,
+    "per_image_dice_nonempty": 0.7856056045479767,
+    "empty_image_false_positive_rate": 0.06077348066298342,
+    "images": 933,
+    "images_with_buildings": 752,
+    "images_without_buildings": 181,
+    "pixel_counts": {
+      "tp": 49526730,
+      "fp": 7573753,
+      "fn": 8434829,
+      "tn": 912786096
+    },
+    "threshold": 0.5
+  },
+  "inference": {
+    "seconds": 94.909583899891,
+    "seconds_per_image": 0.10172517031070848,
+    "includes_data_loading": true
+  },
+  "environment": {
+    "python": "3.13.16",
+    "torch": "2.14.1+cu132",
+    "gpu": "NVIDIA GeForce RTX 4050 Laptop GPU"
+  }
+}

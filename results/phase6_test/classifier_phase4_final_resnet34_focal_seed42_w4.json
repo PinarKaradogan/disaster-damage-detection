@@ -1,0 +1,85 @@
+{
+  "kind": "classifier",
+  "run": "phase4_final_resnet34_focal_seed42_w4",
+  "model_name": "resnet34_early_fusion",
+  "evaluation_split": "test",
+  "test_used": true,
+  "protocol": "results/phase6_protocol.md",
+  "protocol_commit": "5396622801f50c0a5b2433a9ab9bda123490a63c",
+  "best_pth_sha256": "16f10bd6d85048ccc950001248a95486388ba5d0fc4f512abb8e384443ceeb11",
+  "best_epoch": 4,
+  "val_macro_f1": 0.7789012622077182,
+  "test_samples": 53806,
+  "label_map": {
+    "no-damage": 0,
+    "minor-damage": 1,
+    "major-damage": 2,
+    "destroyed": 3
+  },
+  "manifest": "C:\\Users\\bhrto\\disaster-damage-detection\\data\\processed\\patches_full\\patches.csv",
+  "manifest_sha256": "383da7b841c0bd8b11b9cf807873b029291ad23b3c3f48135d9b7dde1ffe11ec",
+  "test": {
+    "macro_f1": 0.7362908547769177,
+    "class_f1": [
+      0.9508349793499731,
+      0.5595073520170919,
+      0.648575968707982,
+      0.7862451190326237
+    ],
+    "class_precision": [
+      0.9423405466970387,
+      0.7035398230088495,
+      0.6121365943700969,
+      0.7495196926032661
+    ],
+    "class_recall": [
+      0.9594839457853156,
+      0.46442728979762155,
+      0.6896282817780088,
+      0.8267549668874172
+    ],
+    "confusion_matrix": [
+      [
+        39714,
+        601,
+        593,
+        483
+      ],
+      [
+        1505,
+        2226,
+        806,
+        256
+      ],
+      [
+        634,
+        256,
+        2653,
+        304
+      ],
+      [
+        291,
+        81,
+        282,
+        3121
+      ]
+    ],
+    "accuracy": 0.8867784261978218
+  },
+  "damage_f1_harmonic": 0.7076262891006719,
+  "parameter_count": 21296132,
+  "inference": {
+    "seconds": 148.90486879996024,
+    "pairs_per_second": 361.34479976127125,
+    "batch_size": 32,
+    "amp": true,
+    "num_workers": 4,
+    "includes_data_loading": true
+  },
+  "training_time_seconds": 2973.404966000002,
+  "environment": {
+    "python": "3.13.16",
+    "torch": "2.14.1+cu132",
+    "gpu": "NVIDIA GeForce RTX 4050 Laptop GPU"
+  }
+}

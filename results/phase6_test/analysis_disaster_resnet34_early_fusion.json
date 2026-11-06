@@ -1,0 +1,313 @@
+{
+  "min_support": 30,
+  "overall": {
+    "buildings": 53806,
+    "support": {
+      "no-damage": 41391,
+      "minor-damage": 4793,
+      "major-damage": 3847,
+      "destroyed": 3775
+    },
+    "accuracy": 0.8867784261978218,
+    "class_f1": {
+      "no-damage": 0.9508349793499731,
+      "minor-damage": 0.5595073520170919,
+      "major-damage": 0.648575968707982,
+      "destroyed": 0.7862451190326237
+    },
+    "present_class_macro_f1": 0.7362908547769177,
+    "classes_included": 4
+  },
+  "by_disaster": {
+    "guatemala-volcano": {
+      "buildings": 30,
+      "support": {
+        "no-damage": 26,
+        "minor-damage": 3,
+        "major-damage": 0,
+        "destroyed": 1
+      },
+      "accuracy": 0.8666666666666667,
+      "class_f1": {
+        "no-damage": "n < 30",
+        "minor-damage": "n < 30",
+        "major-damage": "n < 30",
+        "destroyed": "n < 30"
+      },
+      "present_class_macro_f1": null,
+      "classes_included": 0
+    },
+    "hurricane-florence": {
+      "buildings": 2116,
+      "support": {
+        "no-damage": 1675,
+        "minor-damage": 50,
+        "major-damage": 381,
+        "destroyed": 10
+      },
+      "accuracy": 0.9253308128544423,
+      "class_f1": {
+        "no-damage": 0.9662447257383966,
+        "minor-damage": 0.0,
+        "major-damage": 0.8592233009708737,
+        "destroyed": "n < 30"
+      },
+      "present_class_macro_f1": 0.6084893422364234,
+      "classes_included": 3
+    },
+    "hurricane-harvey": {
+      "buildings": 7599,
+      "support": {
+        "no-damage": 4162,
+        "minor-damage": 870,
+        "major-damage": 2371,
+        "destroyed": 196
+      },
+      "accuracy": 0.7704961179102513,
+      "class_f1": {
+        "no-damage": 0.8685821950070655,
+        "minor-damage": 0.14527363184079603,
+        "major-damage": 0.7619744058500915,
+        "destroyed": 0.08658008658008658
+      },
+      "present_class_macro_f1": 0.46560257981950987,
+      "classes_included": 4
+    },
+    "hurricane-matthew": {
+      "buildings": 3968,
+      "support": {
+        "no-damage": 616,
+        "minor-damage": 2337,
+        "major-damage": 336,
+        "destroyed": 679
+      },
+      "accuracy": 0.647429435483871,
+      "class_f1": {
+        "no-damage": 0.46819787985865724,
+        "minor-damage": 0.7428829643018527,
+        "major-damage": 0.23595505617977527,
+        "destroyed": 0.6914765906362546
+      },
+      "present_class_macro_f1": 0.534628122744135,
+      "classes_included": 4
+    },
+    "hurricane-michael": {
+      "buildings": 5597,
+      "support": {
+        "no-damage": 3644,
+        "minor-damage": 1361,
+        "major-damage": 409,
+        "destroyed": 183
+      },
+      "accuracy": 0.7219939253171341,
+      "class_f1": {
+        "no-damage": 0.8461054485969548,
+        "minor-damage": 0.4518419884598313,
+        "major-damage": 0.3045977011494253,
+        "destroyed": 0.42953020134228187
+      },
+      "present_class_macro_f1": 0.5080188348871233,
+      "classes_included": 4
+    },
+    "mexico-earthquake": {
+      "buildings": 11396,
+      "support": {
+        "no-damage": 11280,
+        "minor-damage": 84,
+        "major-damage": 31,
+        "destroyed": 1
+      },
+      "accuracy": 0.9897332397332397,
+      "class_f1": {
+        "no-damage": 0.9948840081150216,
+        "minor-damage": 0.0,
+        "major-damage": 0.0,
+        "destroyed": "n < 30"
+      },
+      "present_class_macro_f1": 0.3316280027050072,
+      "classes_included": 3
+    },
+    "midwest-flooding": {
+      "buildings": 2388,
+      "support": {
+        "no-damage": 2274,
+        "minor-damage": 41,
+        "major-damage": 25,
+        "destroyed": 48
+      },
+      "accuracy": 0.9581239530988275,
+      "class_f1": {
+        "no-damage": 0.984977139124755,
+        "minor-damage": 0.0,
+        "major-damage": "n < 30",
+        "destroyed": 0.37333333333333335
+      },
+      "present_class_macro_f1": 0.45277015748602945,
+      "classes_included": 3
+    },
+    "palu-tsunami": {
+      "buildings": 12401,
+      "support": {
+        "no-damage": 10914,
+        "minor-damage": 0,
+        "major-damage": 250,
+        "destroyed": 1237
+      },
+      "accuracy": 0.9487944520603178,
+      "class_f1": {
+        "no-damage": 0.9755963302752294,
+        "minor-damage": "n < 30",
+        "major-damage": 0.07207207207207207,
+        "destroyed": 0.8402100525131283
+      },
+      "present_class_macro_f1": 0.6292928182868099,
+      "classes_included": 3
+    },
+    "santa-rosa-wildfire": {
+      "buildings": 4213,
+      "support": {
+        "no-damage": 3221,
+        "minor-damage": 19,
+        "major-damage": 9,
+        "destroyed": 964
+      },
+      "accuracy": 0.9708046522667932,
+      "class_f1": {
+        "no-damage": 0.9825,
+        "minor-damage": "n < 30",
+        "major-damage": "n < 30",
+        "destroyed": 0.9493226292022078
+      },
+      "present_class_macro_f1": 0.9659113146011039,
+      "classes_included": 2
+    },
+    "socal-fire": {
+      "buildings": 4098,
+      "support": {
+        "no-damage": 3579,
+        "minor-damage": 28,
+        "major-damage": 35,
+        "destroyed": 456
+      },
+      "accuracy": 0.9375305026842362,
+      "class_f1": {
+        "no-damage": 0.9688377316114543,
+        "minor-damage": "n < 30",
+        "major-damage": 0.05128205128205128,
+        "destroyed": 0.7983623336745138
+      },
+      "present_class_macro_f1": 0.6061607055226731,
+      "classes_included": 3
+    }
+  },
+  "by_type": {
+    "earthquake": {
+      "buildings": 11396,
+      "support": {
+        "no-damage": 11280,
+        "minor-damage": 84,
+        "major-damage": 31,
+        "destroyed": 1
+      },
+      "accuracy": 0.9897332397332397,
+      "class_f1": {
+        "no-damage": 0.9948840081150216,
+        "minor-damage": 0.0,
+        "major-damage": 0.0,
+        "destroyed": "n < 30"
+      },
+      "present_class_macro_f1": 0.3316280027050072,
+      "classes_included": 3
+    },
+    "fire": {
+      "buildings": 8311,
+      "support": {
+        "no-damage": 6800,
+        "minor-damage": 47,
+        "major-damage": 44,
+        "destroyed": 1420
+      },
+      "accuracy": 0.9543977860666586,
+      "class_f1": {
+        "no-damage": 0.9753031647441586,
+        "minor-damage": 0.0,
+        "major-damage": 0.04,
+        "destroyed": 0.8996632996632996
+      },
+      "present_class_macro_f1": 0.47874161610186455,
+      "classes_included": 4
+    },
+    "flooding": {
+      "buildings": 12103,
+      "support": {
+        "no-damage": 8111,
+        "minor-damage": 961,
+        "major-damage": 2777,
+        "destroyed": 254
+      },
+      "accuracy": 0.8345864661654135,
+      "class_f1": {
+        "no-damage": 0.9209290983356703,
+        "minor-damage": 0.13153153153153152,
+        "major-damage": 0.7706826045926392,
+        "destroyed": 0.14925373134328357
+      },
+      "present_class_macro_f1": 0.49309924145078116,
+      "classes_included": 4
+    },
+    "tsunami": {
+      "buildings": 12401,
+      "support": {
+        "no-damage": 10914,
+        "minor-damage": 0,
+        "major-damage": 250,
+        "destroyed": 1237
+      },
+      "accuracy": 0.9487944520603178,
+      "class_f1": {
+        "no-damage": 0.9755963302752294,
+        "minor-damage": "n < 30",
+        "major-damage": 0.07207207207207207,
+        "destroyed": 0.8402100525131283
+      },
+      "present_class_macro_f1": 0.6292928182868099,
+      "classes_included": 3
+    },
+    "volcano": {
+      "buildings": 30,
+      "support": {
+        "no-damage": 26,
+        "minor-damage": 3,
+        "major-damage": 0,
+        "destroyed": 1
+      },
+      "accuracy": 0.8666666666666667,
+      "class_f1": {
+        "no-damage": "n < 30",
+        "minor-damage": "n < 30",
+        "major-damage": "n < 30",
+        "destroyed": "n < 30"
+      },
+      "present_class_macro_f1": null,
+      "classes_included": 0
+    },
+    "wind": {
+      "buildings": 9565,
+      "support": {
+        "no-damage": 4260,
+        "minor-damage": 3698,
+        "major-damage": 745,
+        "destroyed": 862
+      },
+      "accuracy": 0.69106116048092,
+      "class_f1": {
+        "no-damage": 0.7989866725410287,
+        "minor-damage": 0.6447072915107052,
+        "major-damage": 0.26988636363636365,
+        "destroyed": 0.6517311608961304
+      },
+      "present_class_macro_f1": 0.591327872146057,
+      "classes_included": 4
+    }
+  }
+}

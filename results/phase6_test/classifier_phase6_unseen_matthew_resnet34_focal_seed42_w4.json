@@ -1,0 +1,85 @@
+{
+  "kind": "classifier",
+  "run": "phase6_unseen_matthew_resnet34_focal_seed42_w4",
+  "model_name": "resnet34_early_fusion",
+  "evaluation_split": "test",
+  "test_used": true,
+  "protocol": "results/phase6_protocol.md",
+  "protocol_commit": "5396622801f50c0a5b2433a9ab9bda123490a63c",
+  "best_pth_sha256": "fa3bc0219cc584dbe13d5363eee4940c6475441dd9827cecd9f63c6dc2b4bcbe",
+  "best_epoch": 11,
+  "val_macro_f1": 0.7659285068874148,
+  "test_samples": 17120,
+  "label_map": {
+    "no-damage": 0,
+    "minor-damage": 1,
+    "major-damage": 2,
+    "destroyed": 3
+  },
+  "manifest": "C:\\Users\\bhrto\\disaster-damage-detection\\data\\processed\\patches_unseen_hurricane-matthew\\patches.csv",
+  "manifest_sha256": "270c5cdf19a27b7b9adca8974d2641ddb5602993640231dc1f67d29368018df6",
+  "test": {
+    "macro_f1": 0.26688102085682985,
+    "class_f1": [
+      0.35298526105420935,
+      0.07669491525423729,
+      0.08456659619450317,
+      0.5532773109243697
+    ],
+    "class_precision": [
+      0.2193929042776182,
+      0.6522522522522523,
+      0.21505376344086022,
+      0.5265515035188739
+    ],
+    "class_recall": [
+      0.9025870328968381,
+      0.04074282498593135,
+      0.05263157894736842,
+      0.5828611898016998
+    ],
+    "confusion_matrix": [
+      [
+        2826,
+        46,
+        104,
+        155
+      ],
+      [
+        7546,
+        362,
+        215,
+        762
+      ],
+      [
+        1478,
+        119,
+        120,
+        563
+      ],
+      [
+        1031,
+        28,
+        119,
+        1646
+      ]
+    ],
+    "accuracy": 0.2893691588785047
+  },
+  "damage_f1_harmonic": 0.13557453671053285,
+  "parameter_count": 21296132,
+  "inference": {
+    "seconds": 70.11373470001854,
+    "pairs_per_second": 244.17469805663444,
+    "batch_size": 32,
+    "amp": true,
+    "num_workers": 4,
+    "includes_data_loading": true
+  },
+  "training_time_seconds": 5797.632265000138,
+  "environment": {
+    "python": "3.13.16",
+    "torch": "2.14.1+cu132",
+    "gpu": "NVIDIA GeForce RTX 4050 Laptop GPU"
+  }
+}
