@@ -64,6 +64,20 @@ python -m src.evaluation.two_stage predict --image-id <val image id> --threshold
 python -m src.evaluation.two_stage evaluate-val --threshold 0.9 --split-erosion 4 --output <report.json>
 ```
 
+## Demo (Phase 7)
+
+A local web demo of the two-stage system (no extra packages; Python's standard-library HTTP server):
+
+```bash
+python -m src.demo_app
+```
+
+Open http://127.0.0.1:7860, pick a validation example or upload a PRE/POST image pair (same size, sides a
+multiple of 32; xBD images are 1024×1024) and get the damage map. Settings are the ones frozen in the
+Phase 6 protocol (U-Net threshold 0.9, split erosion 4, ResNet34 early fusion classifier). The server listens
+on 127.0.0.1 only and needs the local checkpoints (`results/phase5_unet_resnet34_seed42_w4/best.pth`,
+`results/phase4_final_resnet34_focal_seed42_w4/best.pth`).
+
 ## Team
 
 - Pınar Karadoğan
