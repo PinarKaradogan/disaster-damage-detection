@@ -12,7 +12,9 @@ import pytest
 import torch
 from PIL import Image
 
-from src.demo_app import DemoError, check_pair, decode_image, make_handler, predict_pair, to_data_url
+from src import demo_app
+from src.demo_app import (DemoError, available_examples, check_pair, decode_image, example_pair, make_handler,
+                          missing_checkpoints, page_html, predict_pair, to_data_url)
 from test_two_stage import BrightnessClassifier, FixedUNet
 
 
@@ -56,9 +58,13 @@ def test_predict_pair_counts_and_overlay():
 
 
 @pytest.fixture
-def server():
+def server(tmp_path):
     pre, post, mask = pair()
-    handler = make_handler(FixedUNet(mask), BrightnessClassifier(), torch.device("cpu"))
+    images = tmp_path / demo_app.EXAMPLE_DIR
+    images.mkdir(parents=True)
+    pre.save(images / "palu-tsunami_00000025_pre_disaster.png")
+    post.save(images / "palu-tsunami_00000025_post_disaster.png")
+    handler = make_handler(FixedUNet(mask), BrightnessClassifier(), torch.device("cpu"), project_root=tmp_path)
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), handler)
     thread = threading.Thread(target=httpd.serve_forever, daemon=True)
     thread.start()
@@ -86,7 +92,42 @@ def test_http_page_and_predict(server):
     assert status == 200 and body["buildings"] == 2 and body["overlay"].startswith("data:image/png;base64,")
     status, body = post_json(base + "/predict", {"pre": to_data_url(pre), "post": to_data_url(post.resize((128, 128)))})
     assert status == 400 and "aynı boyutta" in body["error"]
+    status, body = post_json(base + "/predict", {"example": "palu-tsunami_00000025"})
+    assert status == 200 and body["buildings"] == 2
+    status, body = post_json(base + "/predict", {"example": "santa-rosa-wildfire_00000007"})
+    assert status == 400 and "bulunamadı" in body["error"]
     status, body = post_json(base + "/predict", {"example": "unknown_00000001"})
     assert status == 400 and "Bilinmeyen" in body["error"]
     with pytest.raises(urllib.error.HTTPError):
         urllib.request.urlopen(base + "/missing", timeout=30)
+
+
+def test_missing_files_are_reported(tmp_path):
+    assert set(missing_checkpoints(tmp_path)) == {demo_app.DEFAULT_UNET, demo_app.DEFAULT_CLASSIFIER}
+    for path in missing_checkpoints(tmp_path):
+        (tmp_path / path).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / path).write_bytes(b"x")
+    assert missing_checkpoints(tmp_path) == []
+
+    assert available_examples(tmp_path) == {}
+    page = page_html(tmp_path).decode("utf-8")
+    assert "palu-tsunami_00000025" not in page and "bulunamadı" in page
+    with pytest.raises(DemoError, match="bulunamadı"):
+        example_pair("palu-tsunami_00000025", tmp_path)
+
+    images = tmp_path / demo_app.EXAMPLE_DIR
+    images.mkdir(parents=True)
+    for kind in ("pre", "post"):
+        Image.new("RGB", (256, 256)).save(images / f"palu-tsunami_00000025_{kind}_disaster.png")
+    assert list(available_examples(tmp_path)) == ["palu-tsunami_00000025"]
+    pre, post = example_pair("palu-tsunami_00000025", tmp_path)
+    assert pre.size == post.size == (256, 256)
+    page = page_html(tmp_path).decode("utf-8")
+    assert "palu-tsunami_00000025" in page and "santa-rosa-wildfire_00000007" not in page
+
+
+def test_main_stops_with_clear_message_without_checkpoints(tmp_path, monkeypatch):
+    monkeypatch.setattr(demo_app, "ROOT", tmp_path)
+    monkeypatch.setattr(demo_app, "missing_checkpoints", lambda root=tmp_path: [demo_app.DEFAULT_UNET])
+    with pytest.raises(SystemExit, match="model ağırlıkları bulunamadı"):
+        demo_app.main([])

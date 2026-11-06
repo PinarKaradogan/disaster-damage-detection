@@ -18,7 +18,8 @@ from pathlib import Path
 from PIL import Image
 
 from src.data.dataset import ROOT
-from src.evaluation.two_stage import CLASS_NAMES, DAMAGE_COLORS, MIN_AREA, draw_damage, load_models, run_two_stage
+from src.evaluation.two_stage import (CLASS_NAMES, DAMAGE_COLORS, DEFAULT_CLASSIFIER, DEFAULT_UNET, MIN_AREA,
+                                      draw_damage, load_models, run_two_stage)
 
 THRESHOLD, SPLIT_EROSION = 0.9, 4
 MAX_BODY_BYTES = 40 * 1024 * 1024
@@ -29,6 +30,7 @@ EXAMPLES = {
     "hurricane-harvey_00000434": "Harvey kasırgası (sel) — ağır hasar",
     "mexico-earthquake_00000119": "Meksika depremi — çoğunlukla sağlam",
 }
+EXAMPLE_DIR = "data/train/images"
 LABELS_TR = {"no-damage": "Hasarsız", "minor-damage": "Hafif hasar",
              "major-damage": "Ağır hasar", "destroyed": "Yıkılmış"}
 
@@ -56,12 +58,30 @@ def check_pair(pre, post):
         raise DemoError("Görüntü kenarları 32'nin katı ve 256–2048 piksel olmalı (xBD: 1024×1024)")
 
 
+def missing_checkpoints(project_root=ROOT):
+    """Checkpoint paths (relative to the project) that are not on disk."""
+    return [path for path in (DEFAULT_UNET, DEFAULT_CLASSIFIER) if not (Path(project_root) / path).is_file()]
+
+
+def example_files(image_id, project_root=ROOT):
+    base = Path(project_root) / EXAMPLE_DIR
+    return base / f"{image_id}_pre_disaster.png", base / f"{image_id}_post_disaster.png"
+
+
+def available_examples(project_root=ROOT):
+    """Examples whose original PRE and POST images are both on disk."""
+    return {k: v for k, v in EXAMPLES.items() if all(f.is_file() for f in example_files(k, project_root))}
+
+
 def example_pair(image_id, project_root=ROOT):
     if image_id not in EXAMPLES:
         raise DemoError("Bilinmeyen örnek")
-    base = Path(project_root) / "data/train/images"
-    return (Image.open(base / f"{image_id}_pre_disaster.png").convert("RGB"),
-            Image.open(base / f"{image_id}_post_disaster.png").convert("RGB"))
+    pre_path, post_path = example_files(image_id, project_root)
+    missing = [f.name for f in (pre_path, post_path) if not f.is_file()]
+    if missing:
+        raise DemoError(f"Örnek görüntüsü bulunamadı: {EXAMPLE_DIR}/{', '.join(missing)} "
+                        "(xBD train görüntüleri gerekir; kendi PRE/POST görüntülerinizi yükleyebilirsiniz)")
+    return Image.open(pre_path).convert("RGB"), Image.open(post_path).convert("RGB")
 
 
 def to_data_url(image):
@@ -82,9 +102,12 @@ def predict_pair(pre, post, unet, classifier, device):
                              color="rgb({},{},{})".format(*DAMAGE_COLORS[i])) for i, n in enumerate(CLASS_NAMES)])
 
 
-def page_html():
-    options = "".join(f'<option value="{k}">{v}</option>' for k, v in EXAMPLES.items())
-    return PAGE.replace("{{OPTIONS}}", options).encode("utf-8")
+def page_html(project_root=ROOT):
+    examples = available_examples(project_root)
+    options = "".join(f'<option value="{k}">{v}</option>' for k, v in examples.items())
+    note = "" if examples else (f"Hazır örneklerin görüntüleri bulunamadı ({EXAMPLE_DIR}). "
+                                "Kendi PRE/POST görüntülerinizi yükleyebilirsiniz.")
+    return PAGE.replace("{{OPTIONS}}", options).replace("{{NOTE}}", note).encode("utf-8")
 
 
 def make_handler(unet, classifier, device, project_root=ROOT):
@@ -102,7 +125,7 @@ def make_handler(unet, classifier, device, project_root=ROOT):
 
         def do_GET(self):
             if self.path in ("/", "/index.html"):
-                self._send(200, page_html(), "text/html; charset=utf-8")
+                self._send(200, page_html(project_root), "text/html; charset=utf-8")
             else:
                 self._send(404, b"not found", "text/plain")
 
@@ -123,6 +146,8 @@ def make_handler(unet, classifier, device, project_root=ROOT):
                 self._json(400, dict(error=str(exc)))
             except (json.JSONDecodeError, AttributeError):
                 self._json(400, dict(error="Geçersiz istek"))
+            except Exception as exc:  # unexpected: keep the page usable and show the reason
+                self._json(500, dict(error=f"Beklenmeyen hata: {exc}"))
 
         def _json(self, status, payload):
             self._send(status, json.dumps(payload).encode("utf-8"), "application/json")
@@ -135,6 +160,13 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--port", type=int, default=7860)
     args = parser.parse_args(argv)
+    missing = missing_checkpoints()
+    if missing:
+        raise SystemExit("Demo başlatılamadı: model ağırlıkları bulunamadı:\n"
+                         + "\n".join(f"  - {ROOT / path}" for path in missing)
+                         + "\nBu dosyalar git'te yok; Faz 4/5 eğitim klasörlerinden ya da yedekten kopyalayın.")
+    if not available_examples():
+        print(f"Uyarı: hazır örnek görüntüleri bulunamadı ({ROOT / EXAMPLE_DIR}); yalnızca yükleme çalışır.", flush=True)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Modeller yükleniyor ({device}) ...", flush=True)
     unet, classifier, meta = load_models(device)
@@ -174,7 +206,7 @@ figure img{width:100%;border-radius:8px;border:1px solid var(--line);display:blo
 <label>PRE (afet öncesi)<input type="file" id="pre" accept="image/png,image/jpeg"></label>
 <label>POST (afet sonrası)<input type="file" id="post" accept="image/png,image/jpeg"></label>
 <button id="run">Hasar haritası çıkar</button></div>
-<p id="status" role="status"></p></div>
+<p id="status" role="status">{{NOTE}}</p></div>
 <div class="card" id="result" hidden>
 <div class="images"><figure><img id="img-pre" alt="Afet öncesi görüntü"><figcaption>PRE — afet öncesi</figcaption></figure>
 <figure><img id="img-out" alt="Afet sonrası görüntü üzerinde tahmin edilen hasar haritası"><figcaption id="summary"></figcaption></figure></div>

@@ -75,8 +75,19 @@ python -m src.demo_app
 Open http://127.0.0.1:7860, pick a validation example or upload a PRE/POST image pair (same size, sides a
 multiple of 32; xBD images are 1024×1024) and get the damage map. Settings are the ones frozen in the
 Phase 6 protocol (U-Net threshold 0.9, split erosion 4, ResNet34 early fusion classifier). The server listens
-on 127.0.0.1 only and needs the local checkpoints (`results/phase5_unet_resnet34_seed42_w4/best.pth`,
-`results/phase4_final_resnet34_focal_seed42_w4/best.pth`).
+on 127.0.0.1 only.
+
+Required local files (not in git):
+
+| What | Path |
+| ---- | ---- |
+| U-Net checkpoint (Phase 5) | `results/phase5_unet_resnet34_seed42_w4/best.pth` |
+| Damage classifier checkpoint (Phase 4) | `results/phase4_final_resnet34_focal_seed42_w4/best.pth` |
+| Original images for the built-in examples | `data/train/images/<image id>_pre_disaster.png` and `_post_disaster.png` (xBD train archive) |
+
+If a checkpoint is missing, the demo stops at startup and lists the missing paths. If the example images are
+missing, the demo still starts: unavailable examples are hidden from the list and uploading your own pair keeps
+working.
 
 ## Team
 
