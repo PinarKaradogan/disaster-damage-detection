@@ -1,6 +1,10 @@
 # Faz 6 — Test Değerlendirme Protokolü (ön kayıt)
 
-Durum: **taslak, onay bekliyor** · Hazırlayan: Bahar (Claude ile) · Onay: Pınar
+Durum: **onaylandı** · Hazırlayan: Bahar (Claude ile) · Onay: Pınar
+Onay kaydı: Pınar protokolü üç koşulla onayladı: (1) Simple CNN `best.pth` SHA-256'sının eklenmesi ve validation
+sonucunun doğrulanması, (2) hurricane-matthew deneyinde train/val'de matthew olmadığının doğrulanması ve yeni modelin
+checkpoint'inin test öncesi sabitlenmesi, (3) M3 ve M4 metriklerinin ayrı tanımlanması. Üç koşul da test seti
+açılmadan önce tamamlandı (bölüm 2, 4 ve 6).
 Bu dosya test seti açılmadan **önce** commit edilir. Commit tarihi, aşağıdaki kararların test sonuçlarından önce
 verildiğinin kaydıdır. Test sonuçları görüldükten sonra bu dosyadaki hiçbir karar değiştirilmez; bir sapma
 gerekirse ayrı bir "sapma" bölümüne gerekçesiyle eklenir ve raporda belirtilir.
@@ -20,7 +24,7 @@ gerekirse ayrı bir "sapma" bölümüne gerekçesiyle eklenir ve raporda belirti
 | Sınıflandırıcı (seçilen) | `phase4_final_resnet34_focal_seed42_w4` | `16f10bd6d85048ccc950001248a95486388ba5d0fc4f512abb8e384443ceeb11` | Macro-F1 0,7789 |
 | Sınıflandırıcı | `phase5_siamese_resnet34_focal_seed42_w4` | `52307a9356b798aa2213e54e66e3b65d6afd283231d5f8e480c48cb490785e85` | Macro-F1 0,7773 |
 | Sınıflandırıcı | `phase5_siamese_vit_small_focal_seed42_w4` | `1ea45bf6eae0e4313d9ea08b3dc16ecad3bca8498da442ecfa07babba1553d4f` | Macro-F1 0,7701 |
-| Sınıflandırıcı | `phase4_cnn_focal_seed42_retry_20261018` (Pınar) | dosya geldiğinde kaydedilir* | Macro-F1 0,7411 |
+| Sınıflandırıcı | `phase4_cnn_focal_seed42_retry_20261018` (Pınar) | `157782f4448a10c39f1310b88a5c02d3f9c7863e4091819e73a45fb781036a81` | Macro-F1 0,7411* |
 | Genelleme (matthew görmemiş) | `phase6_unseen_matthew_resnet34_focal_seed42_w4` | `fa3bc0219cc584dbe13d5363eee4940c6475441dd9827cecd9f63c6dc2b4bcbe` | Macro-F1 0,7659 (matthew'siz val) |
 | Lokalizasyon | `phase5_unet_resnet34_seed42_w4` | `9d80a6aabe4a9d9b1eb712d1d8567c3bbfa60229e7838074ad1fe27ddade8604` | Piksel Dice 0,8609 |
 
@@ -28,6 +32,10 @@ gerekirse ayrı bir "sapma" bölümüne gerekçesiyle eklenir ve raporda belirti
 dosyaya eklenir: (a) checkpoint config'i kayıtlı `config.json` ile aynı (config.json SHA-256
 `fdfb5272b3648c89d16dd78fc4d50509478f199a2835e899db2940114528ce3c`), (b) validation'da yeniden değerlendirme
 kayıtlı 0,7411'i 1e-4 tolerans içinde verir. Doğrulama geçmezse CNN test edilmez ve bu raporlanır.
+**Doğrulandı (test açılmadan önce):** dosya Pınar'dan alındı (`best.pth.zip` adıyla gelen dosya bir `torch.save`
+arşividir; içeriği değiştirilmeden `best.pth` olarak konuldu). Checkpoint config'i `config.json` ile birebir aynı,
+epoch 14; validation'da yeniden değerlendirme Macro-F1 0,7410596568 — kayıtlı değerle fark 0,0, sınıf F1'leri aynı
+(`results/phase6_audit/verify_phase4_cnn_focal_seed42_retry_20261018.json`).
 
 İki aşamalı sistem ayarı (validation'da lokalizasyon F1 ile seçildi): **threshold 0,9, split erosion 4,
 min area 10 px**, sınıflandırıcı ResNet34 early fusion. İkincil (önceden bildirilen) karşılaştırma: threshold 0,5,

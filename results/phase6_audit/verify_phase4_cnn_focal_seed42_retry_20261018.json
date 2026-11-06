@@ -1,0 +1,31 @@
+{
+  "experiment": "phase4_cnn_focal_seed42_retry_20261018",
+  "purpose": "verify checkpoint received from Pinar before the test set is opened",
+  "test_used": false,
+  "received_file": "best.pth.zip (a torch.save archive; renamed to best.pth unchanged)",
+  "best_pth_sha256": "157782f4448a10c39f1310b88a5c02d3f9c7863e4091819e73a45fb781036a81",
+  "config_json_sha256": "fdfb5272b3648c89d16dd78fc4d50509478f199a2835e899db2940114528ce3c",
+  "checkpoint_config_equals_config_json": true,
+  "checkpoint_epoch": 14,
+  "recorded_val_macro_f1": 0.7410596567571364,
+  "reevaluated_val_macro_f1": 0.7410596567571364,
+  "difference": 0.0,
+  "tolerance": 0.0001,
+  "passed": true,
+  "reevaluated_class_f1": [
+    0.9239993244384395,
+    0.5594168503136124,
+    0.6321671525753159,
+    0.8486552997011777
+  ],
+  "recorded_class_f1": [
+    0.9239993244384395,
+    0.5594168503136124,
+    0.6321671525753159,
+    0.8486552997011777
+  ],
+  "versions": {
+    "python": "3.13.16",
+    "torch": "2.14.1+cu132"
+  }
+}
